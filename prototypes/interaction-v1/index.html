@@ -1,0 +1,1770 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>倾诉空间 - 交互稿 V1</title>
+  <style>
+    :root {
+      --bg: #edf1f7;
+      --canvas: #f8fafc;
+      --surface: #ffffff;
+      --surface-soft: #f1f5fb;
+      --surface-blue: #edf5ff;
+      --text: #111827;
+      --muted: #6b7280;
+      --faint: #a7afbc;
+      --line: #e4e9f2;
+      --accent: #1778ff;
+      --accent-deep: #0f5fd1;
+      --lavender: #8276ff;
+      --rose: #f48fb1;
+      --green: #16a085;
+      --shadow: 0 28px 80px rgba(31, 45, 68, 0.18);
+      --soft-shadow: 0 12px 32px rgba(31, 45, 68, 0.11);
+      --radius-lg: 30px;
+      --radius-md: 22px;
+      --radius-sm: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 8% 10%, rgba(23, 120, 255, 0.13), transparent 30%),
+        radial-gradient(circle at 92% 18%, rgba(130, 118, 255, 0.13), transparent 28%),
+        linear-gradient(135deg, #f7f9fd 0%, var(--bg) 100%);
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+      color: inherit;
+    }
+
+    .page {
+      min-height: 100dvh;
+      display: grid;
+      grid-template-columns: minmax(320px, 430px) minmax(280px, 380px);
+      justify-content: center;
+      align-items: center;
+      gap: 42px;
+      padding: 34px;
+    }
+
+    .phone-shell {
+      width: min(100%, 405px);
+      aspect-ratio: 405 / 875;
+      border-radius: 46px;
+      padding: 12px;
+      background: linear-gradient(145deg, #1d2430, #070b12);
+      box-shadow: var(--shadow);
+      position: relative;
+    }
+
+    .phone {
+      position: relative;
+      height: 100%;
+      overflow: hidden;
+      border-radius: 36px;
+      background: var(--canvas);
+      border: 1px solid rgba(255, 255, 255, 0.62);
+    }
+
+    .notch {
+      position: absolute;
+      z-index: 20;
+      left: 50%;
+      top: 10px;
+      width: 116px;
+      height: 31px;
+      transform: translateX(-50%);
+      border-radius: 999px;
+      background: #090d14;
+    }
+
+    .screen {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(18px);
+      transition: opacity 240ms ease, transform 240ms ease;
+      background:
+        radial-gradient(circle at 20% 0%, rgba(23, 120, 255, 0.08), transparent 34%),
+        linear-gradient(180deg, #fbfdff 0%, #f5f7fb 100%);
+    }
+
+    .screen.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(0);
+    }
+
+    .status {
+      height: 56px;
+      padding: 18px 24px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 700;
+      letter-spacing: 0;
+      font-size: 15px;
+    }
+
+    .status-icons {
+      display: flex;
+      gap: 7px;
+      align-items: center;
+      color: #111827;
+    }
+
+    .signal {
+      width: 22px;
+      height: 15px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      align-items: end;
+      gap: 2px;
+    }
+
+    .signal span {
+      display: block;
+      border-radius: 999px;
+      background: currentColor;
+    }
+
+    .signal span:nth-child(1) { height: 5px; }
+    .signal span:nth-child(2) { height: 8px; }
+    .signal span:nth-child(3) { height: 11px; }
+    .signal span:nth-child(4) { height: 14px; }
+
+    .battery {
+      width: 26px;
+      height: 13px;
+      border: 2px solid currentColor;
+      border-radius: 5px;
+      position: relative;
+    }
+
+    .battery::after {
+      content: "";
+      position: absolute;
+      right: -5px;
+      top: 3px;
+      width: 3px;
+      height: 5px;
+      border-radius: 0 2px 2px 0;
+      background: currentColor;
+    }
+
+    .battery::before {
+      content: "";
+      position: absolute;
+      inset: 2px 7px 2px 2px;
+      border-radius: 2px;
+      background: currentColor;
+    }
+
+    .content {
+      flex: 1;
+      overflow: auto;
+      padding: 0 22px 116px;
+      scrollbar-width: none;
+    }
+
+    .content::-webkit-scrollbar {
+      width: 0;
+      height: 0;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 16px 0 24px;
+    }
+
+    .title-area {
+      flex: 1;
+      min-width: 0;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 28px;
+      line-height: 1.08;
+      letter-spacing: 0;
+      font-weight: 780;
+    }
+
+    h2 {
+      font-size: 21px;
+      line-height: 1.16;
+      font-weight: 760;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      font-size: 15px;
+      line-height: 1.25;
+      font-weight: 720;
+      letter-spacing: 0;
+    }
+
+    p {
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 13px;
+    }
+
+    .subtle {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 8px;
+    }
+
+    .icon-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(255, 255, 255, 0.74);
+      box-shadow: 0 8px 24px rgba(31, 45, 68, 0.08);
+      transition: transform 160ms ease, background 160ms ease;
+    }
+
+    .icon-btn:active,
+    .primary-action:active,
+    .record-btn:active,
+    .pill:active,
+    .list-row:active {
+      transform: scale(0.97);
+    }
+
+    .icon {
+      width: 21px;
+      height: 21px;
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .search {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      height: 42px;
+      padding: 0 14px;
+      margin-bottom: 18px;
+      border-radius: 999px;
+      background: rgba(224, 231, 242, 0.72);
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .profile-card {
+      padding: 18px;
+      border-radius: var(--radius-md);
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(239, 246, 255, 0.95)),
+        var(--surface);
+      box-shadow: var(--soft-shadow);
+      border: 1px solid rgba(255, 255, 255, 0.78);
+      margin-bottom: 18px;
+    }
+
+    .profile-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .profile-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+      margin-top: 14px;
+    }
+
+    .soft-chip {
+      min-height: 54px;
+      padding: 11px 12px;
+      border-radius: 15px;
+      background: rgba(241, 245, 251, 0.82);
+      color: #334155;
+      font-size: 12px;
+      line-height: 1.35;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .soft-chip strong {
+      font-size: 15px;
+      color: var(--text);
+      font-weight: 760;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 24px 0 12px;
+    }
+
+    .segment {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+      padding: 4px;
+      height: 45px;
+      margin: 10px 0 20px;
+      background: rgba(224, 231, 242, 0.72);
+      border-radius: 999px;
+    }
+
+    .segment button {
+      border-radius: 999px;
+      background: transparent;
+      color: #64748b;
+      font-weight: 650;
+      transition: background 180ms ease, color 180ms ease, box-shadow 180ms ease;
+    }
+
+    .segment button.active {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: 0 6px 16px rgba(31, 45, 68, 0.08);
+    }
+
+    .list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .list-row {
+      display: grid;
+      grid-template-columns: 46px 1fr auto;
+      gap: 12px;
+      align-items: center;
+      padding: 11px 4px;
+      border-radius: 18px;
+      transition: background 160ms ease, transform 160ms ease;
+    }
+
+    .list-row:hover {
+      background: rgba(255, 255, 255, 0.58);
+    }
+
+    .thumb {
+      width: 44px;
+      height: 52px;
+      border-radius: 13px;
+      background: linear-gradient(180deg, #fff, #e9eef6);
+      box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.18), 0 6px 14px rgba(31, 45, 68, 0.1);
+      padding: 9px 8px;
+    }
+
+    .thumb-line {
+      height: 5px;
+      border-radius: 999px;
+      margin-bottom: 5px;
+      background: #bed5ff;
+    }
+
+    .thumb-line:nth-child(2) { width: 70%; background: #c8bfff; }
+    .thumb-line:nth-child(3) { width: 86%; background: #cdeee4; }
+    .thumb-line:nth-child(4) { width: 54%; background: #ffd6e2; }
+
+    .row-title {
+      font-size: 17px;
+      font-weight: 720;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .row-meta {
+      margin-top: 7px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .more {
+      color: var(--faint);
+      font-size: 24px;
+      line-height: 1;
+      padding-bottom: 14px;
+    }
+
+    .floating-actions {
+      position: absolute;
+      right: 22px;
+      bottom: 92px;
+      z-index: 12;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .round-action {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(255, 255, 255, 0.92);
+      color: #0f172a;
+      box-shadow: 0 12px 30px rgba(31, 45, 68, 0.18);
+    }
+
+    .record-btn {
+      width: 66px;
+      height: 66px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: linear-gradient(180deg, #2686ff, #1068e5);
+      box-shadow: 0 18px 34px rgba(16, 104, 229, 0.35);
+      transition: transform 180ms ease;
+    }
+
+    .tabbar {
+      position: absolute;
+      left: 20px;
+      right: 20px;
+      bottom: 18px;
+      z-index: 12;
+      height: 68px;
+      border-radius: 28px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      background: rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 16px 42px rgba(31, 45, 68, 0.13);
+      border: 1px solid rgba(255, 255, 255, 0.74);
+      padding: 7px;
+    }
+
+    .tabbar button {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      border-radius: 22px;
+      color: var(--muted);
+      background: transparent;
+      font-size: 11px;
+      font-weight: 650;
+    }
+
+    .tabbar button.active {
+      background: rgba(232, 238, 247, 0.86);
+      color: var(--text);
+    }
+
+    .detail-title {
+      margin: 10px 0 14px;
+      font-size: 29px;
+      line-height: 1.12;
+      font-weight: 780;
+      letter-spacing: 0;
+    }
+
+    .player {
+      padding: 16px;
+      border-radius: 25px;
+      background: rgba(238, 243, 250, 0.9);
+      margin: 16px 0 22px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 13px;
+      align-items: center;
+    }
+
+    .progress {
+      height: 5px;
+      border-radius: 999px;
+      background: #d9e1ee;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .progress span {
+      display: block;
+      height: 100%;
+      width: 24%;
+      border-radius: inherit;
+      background: var(--accent);
+    }
+
+    .player-mid {
+      min-width: 0;
+    }
+
+    .player-times {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .play {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: linear-gradient(180deg, #2787ff, #0f68e8);
+      box-shadow: 0 12px 24px rgba(16, 104, 229, 0.24);
+    }
+
+    .speed {
+      font-weight: 720;
+      color: #4b5563;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 26px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 18px;
+    }
+
+    .tabs button {
+      padding: 0 0 12px;
+      background: transparent;
+      color: #9aa3af;
+      font-size: 17px;
+      font-weight: 760;
+      position: relative;
+    }
+
+    .tabs button.active {
+      color: var(--text);
+    }
+
+    .tabs button.active::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -1px;
+      height: 4px;
+      border-radius: 999px;
+      background: var(--text);
+    }
+
+    .transcript,
+    .summary,
+    .chapters {
+      display: none;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .transcript.active,
+    .summary.active,
+    .chapters.active {
+      display: flex;
+    }
+
+    .utterance {
+      display: grid;
+      grid-template-columns: 40px 1fr;
+      gap: 12px;
+    }
+
+    .speaker {
+      width: 33px;
+      height: 33px;
+      border-radius: 11px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: linear-gradient(135deg, #84a4ff, #647bff);
+      font-weight: 760;
+      font-size: 14px;
+    }
+
+    .speaker.rose {
+      background: linear-gradient(135deg, #ffabc5, #ef7da4);
+    }
+
+    .speaker.green {
+      background: linear-gradient(135deg, #6fd8bd, #21a583);
+    }
+
+    .speaker-line {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
+    .utterance p {
+      color: var(--text);
+      font-size: 16px;
+      line-height: 1.62;
+    }
+
+    .note-card,
+    .advice-card,
+    .profile-detail-card {
+      padding: 16px;
+      border-radius: var(--radius-sm);
+      background: rgba(255, 255, 255, 0.82);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      box-shadow: 0 8px 22px rgba(31, 45, 68, 0.06);
+    }
+
+    .note-card h3,
+    .advice-card h3 {
+      margin-bottom: 9px;
+    }
+
+    .bullet-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      color: #344054;
+      line-height: 1.52;
+      font-size: 14px;
+    }
+
+    .bullet-list li {
+      display: grid;
+      grid-template-columns: 16px 1fr;
+      gap: 8px;
+    }
+
+    .bullet-list li::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      margin-top: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .primary-action {
+      width: 100%;
+      min-height: 54px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, #1d84ff, #1268e6);
+      color: white;
+      font-weight: 760;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      box-shadow: 0 12px 26px rgba(18, 104, 230, 0.25);
+      transition: transform 180ms ease;
+    }
+
+    .secondary-action {
+      width: 100%;
+      min-height: 48px;
+      border-radius: 16px;
+      background: rgba(235, 241, 249, 0.88);
+      color: #334155;
+      font-weight: 720;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .recording-panel {
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      bottom: 18px;
+      z-index: 30;
+      padding: 18px;
+      border-radius: 30px;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      box-shadow: 0 24px 68px rgba(31, 45, 68, 0.22);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(calc(100% + 36px));
+      transition: opacity 220ms ease, transform 260ms ease, visibility 220ms ease;
+      visibility: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.82);
+    }
+
+    .recording-panel.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+      visibility: visible;
+    }
+
+    .recording-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .timer {
+      font-size: 29px;
+      font-weight: 780;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .wave {
+      height: 52px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin: 10px 0 18px;
+      overflow: hidden;
+    }
+
+    .wave span {
+      flex: 1;
+      max-width: 8px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #2c8aff, #7b75ff);
+      opacity: 0.74;
+      animation: wave 1000ms ease-in-out infinite;
+    }
+
+    .wave span:nth-child(2n) { animation-delay: 120ms; height: 32px; }
+    .wave span:nth-child(3n) { animation-delay: 240ms; height: 42px; }
+    .wave span:nth-child(4n) { animation-delay: 360ms; height: 24px; }
+    .wave span:nth-child(5n) { animation-delay: 480ms; height: 48px; }
+
+    @keyframes wave {
+      0%, 100% { transform: scaleY(0.55); }
+      50% { transform: scaleY(1); }
+    }
+
+    .record-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .stop-btn {
+      background: #111827;
+      color: white;
+    }
+
+    .advice-status {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .status-row {
+      display: grid;
+      grid-template-columns: 34px 1fr auto;
+      gap: 12px;
+      align-items: center;
+      padding: 13px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.78);
+      border: 1px solid rgba(226, 232, 240, 0.76);
+    }
+
+    .check {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: #e7eef9;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 760;
+    }
+
+    .status-row.done .check {
+      background: #daf4ea;
+      color: #087b5d;
+    }
+
+    .status-row.running .check {
+      color: #fff;
+      background: var(--accent);
+      position: relative;
+    }
+
+    .status-row.running .check::after {
+      content: "";
+      position: absolute;
+      inset: -4px;
+      border-radius: inherit;
+      border: 2px solid rgba(23, 120, 255, 0.18);
+      animation: pulse 1200ms ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(0.92); opacity: 0.5; }
+      50% { transform: scale(1.08); opacity: 1; }
+    }
+
+    .status-label {
+      font-size: 14px;
+      font-weight: 720;
+    }
+
+    .status-copy {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 28px;
+      padding: 0 10px;
+      border-radius: 999px;
+      color: #334155;
+      background: #edf3fb;
+      font-size: 12px;
+      font-weight: 680;
+    }
+
+    .expert-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .expert-card {
+      padding: 15px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.83);
+      border: 1px solid rgba(226, 232, 240, 0.76);
+    }
+
+    .round-card {
+      padding: 15px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.84);
+      border: 1px solid rgba(226, 232, 240, 0.78);
+      box-shadow: 0 8px 22px rgba(31, 45, 68, 0.05);
+    }
+
+    .round-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .round-title {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .round-title strong {
+      font-size: 15px;
+      font-weight: 760;
+    }
+
+    .round-title span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .agent-line {
+      display: grid;
+      grid-template-columns: 66px 1fr;
+      gap: 10px;
+      padding: 10px 0;
+      border-top: 1px solid rgba(226, 232, 240, 0.72);
+    }
+
+    .agent-line:first-of-type {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    .agent-name {
+      color: #475569;
+      font-size: 12px;
+      font-weight: 760;
+      line-height: 1.4;
+    }
+
+    .agent-text {
+      color: #253044;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .judge-card {
+      padding: 16px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, #f0f7ff, #ffffff);
+      border: 1px solid rgba(23, 120, 255, 0.14);
+      box-shadow: 0 10px 28px rgba(23, 120, 255, 0.08);
+    }
+
+    .expert-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .input-bar {
+      position: absolute;
+      left: 20px;
+      right: 20px;
+      bottom: 18px;
+      z-index: 12;
+      min-height: 58px;
+      padding: 8px 8px 8px 16px;
+      display: grid;
+      grid-template-columns: 1fr 42px;
+      align-items: center;
+      gap: 8px;
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      box-shadow: 0 14px 40px rgba(31, 45, 68, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.78);
+    }
+
+    .input-bar input {
+      width: 100%;
+      border: 0;
+      outline: none;
+      color: var(--text);
+      background: transparent;
+      font-size: 14px;
+    }
+
+    .send {
+      width: 42px;
+      height: 42px;
+      border-radius: 15px;
+      display: grid;
+      place-items: center;
+      color: white;
+      background: var(--accent);
+    }
+
+    .coach-reply {
+      display: none;
+      margin-top: 12px;
+      padding: 14px;
+      border-radius: 18px;
+      background: #eef6ff;
+      color: #1d3557;
+      line-height: 1.55;
+      font-size: 13px;
+      border: 1px solid rgba(23, 120, 255, 0.12);
+    }
+
+    .coach-reply.active {
+      display: block;
+    }
+
+    .side-panel {
+      align-self: stretch;
+      max-height: 875px;
+      padding: 34px 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .side-card {
+      padding: 26px;
+      border-radius: 32px;
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.74);
+      box-shadow: 0 18px 54px rgba(31, 45, 68, 0.1);
+    }
+
+    .side-card h2 {
+      font-size: 28px;
+      margin-bottom: 12px;
+    }
+
+    .side-card p {
+      font-size: 14px;
+    }
+
+    .flow-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin: 22px 0;
+    }
+
+    .flow-item {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      padding: 13px;
+      border-radius: 17px;
+      background: rgba(241, 245, 251, 0.8);
+    }
+
+    .flow-dot {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      flex: 0 0 22px;
+      background: var(--accent);
+      color: white;
+      font-size: 12px;
+      font-weight: 760;
+    }
+
+    .flow-item strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+
+    .flow-item span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .pill {
+      min-height: 34px;
+      border-radius: 999px;
+      padding: 0 12px;
+      background: #eff4fb;
+      color: #334155;
+      font-size: 12px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .hint {
+      margin-top: 18px;
+      padding: 14px;
+      border-radius: 18px;
+      background: #0f172a;
+      color: #e5edf8;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 860px) {
+      .page {
+        grid-template-columns: 1fr;
+        padding: 20px;
+      }
+
+      .phone-shell {
+        margin: 0 auto;
+      }
+
+      .side-panel {
+        order: -1;
+        padding: 0;
+      }
+    }
+
+    @media (max-width: 450px) {
+      .page {
+        padding: 0;
+        background: var(--canvas);
+      }
+
+      .phone-shell {
+        width: 100%;
+        height: 100dvh;
+        aspect-ratio: auto;
+        padding: 0;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+      }
+
+      .phone {
+        border-radius: 0;
+        border: 0;
+      }
+
+      .notch,
+      .side-panel {
+        display: none;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="phone-shell" aria-label="倾诉空间交互稿">
+      <div class="phone">
+        <div class="notch" aria-hidden="true"></div>
+
+        <section class="screen active" data-screen="home" aria-label="空间首页">
+          <div class="status">
+            <span>14:42</span>
+            <span class="status-icons">
+              <span class="signal" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
+              <span class="battery" aria-hidden="true"></span>
+            </span>
+          </div>
+          <div class="content">
+            <div class="topbar">
+              <div class="title-area">
+                <h1>家的倾诉空间</h1>
+                <p class="subtle">2 位成员  18 条记录</p>
+              </div>
+              <button class="icon-btn" aria-label="搜索">
+                <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m16.5 16.5 4 4"></path></svg>
+              </button>
+              <button class="icon-btn" aria-label="更多">
+                <svg class="icon" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg>
+              </button>
+            </div>
+
+            <div class="search">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m16.5 16.5 4 4"></path></svg>
+              <span>搜索记录、原话、主题</span>
+            </div>
+
+            <button class="profile-card" type="button" data-testid="open-profile" onclick="showScreen('profile')">
+              <div class="profile-head">
+                <div>
+                  <h2>空间画像</h2>
+                  <p class="subtle">系统目前的理解，可查看和修正</p>
+                </div>
+                <span class="tag">更新于今天</span>
+              </div>
+              <div class="profile-grid">
+                <span class="soft-chip"><strong>3</strong>反复主题</span>
+                <span class="soft-chip"><strong>焦虑</strong>常见情绪</span>
+                <span class="soft-chip"><strong>选择压力</strong>本周高频</span>
+                <span class="soft-chip"><strong>陪伴</strong>支持偏好</span>
+              </div>
+            </button>
+
+            <div class="segment" aria-label="记录分组">
+              <button class="active" type="button">最近</button>
+              <button type="button">我的</button>
+              <button type="button">共享</button>
+              <button type="button">收藏</button>
+            </div>
+
+            <div class="section-head">
+              <h2>最近记录</h2>
+              <button class="pill" type="button">筛选</button>
+            </div>
+
+            <div class="list" id="recordList">
+              <button class="list-row" type="button" data-testid="open-detail" onclick="showScreen('detail')">
+                <span class="thumb" aria-hidden="true"><span class="thumb-line"></span><span class="thumb-line"></span><span class="thumb-line"></span><span class="thumb-line"></span></span>
+                <span>
+                  <span class="row-title">06-15 晚间倾诉</span>
+                  <span class="row-meta"><span>戒凡</span><span>35:47</span><span>已关联 3 条历史</span></span>
+                </span>
+                <span class="more">...</span>
+              </button>
+
+              <button class="list-row" type="button" onclick="showScreen('detail')">
+                <span class="thumb" aria-hidden="true"><span class="thumb-line"></span><span class="thumb-line"></span><span class="thumb-line"></span><span class="thumb-line"></span></span>
+                <span>
+                  <span class="row-title">06-13 职业转型和长期规划</span>
+                  <span class="row-meta"><span>满月</span><span>37:23</span><span>已摘要</span></span>
+                </span>
+                <span class="more">...</span>
+              </button>
+
+              <button class="list-row" type="button" onclick="showScreen('detail')">
+                <span class="thumb" aria-hidden="true"><span class="thumb-line"></span><span class="thumb-line"></span><span class="thumb-line"></span><span class="thumb-line"></span></span>
+                <span>
+                  <span class="row-title">06-12 迷茫和身份变化</span>
+                  <span class="row-meta"><span>满月</span><span>28:16</span><span>画像已更新</span></span>
+                </span>
+                <span class="more">...</span>
+              </button>
+
+              <button class="list-row" type="button" onclick="showScreen('detail')">
+                <span class="thumb" aria-hidden="true"><span class="thumb-line"></span><span class="thumb-line"></span><span class="thumb-line"></span><span class="thumb-line"></span></span>
+                <span>
+                  <span class="row-title">06-10 关于要不要马上行动</span>
+                  <span class="row-meta"><span>戒凡</span><span>22:05</span><span>已收藏</span></span>
+                </span>
+                <span class="more">...</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="floating-actions">
+            <button class="round-action" type="button" aria-label="新建">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+            </button>
+            <button class="record-btn" type="button" data-testid="start-recording" onclick="startRecording()" aria-label="开始录音">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M12 4a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V7a3 3 0 0 0-3-3Z"></path><path d="M19 11a7 7 0 0 1-14 0"></path><path d="M12 18v3"></path></svg>
+            </button>
+          </div>
+
+          <nav class="tabbar" aria-label="底部导航">
+            <button class="active" type="button"><svg class="icon" viewBox="0 0 24 24"><path d="M4 11.5 12 5l8 6.5V20a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1Z"></path></svg>空间</button>
+            <button type="button"><svg class="icon" viewBox="0 0 24 24"><path d="M7 3h10a2 2 0 0 1 2 2v16l-7-3-7 3V5a2 2 0 0 1 2-2Z"></path></svg>记录</button>
+            <button type="button"><svg class="icon" viewBox="0 0 24 24"><path d="M4 6h16"></path><path d="M4 12h10"></path><path d="M4 18h7"></path></svg>主题</button>
+            <button type="button"><svg class="icon" viewBox="0 0 24 24"><path d="M12 3v18"></path><path d="M5 8h14"></path><path d="M7 16h10"></path></svg>我的</button>
+          </nav>
+        </section>
+
+        <section class="screen" data-screen="detail" aria-label="记录详情">
+          <div class="status">
+            <span>14:44</span>
+            <span class="status-icons">
+              <span class="signal" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
+              <span class="battery" aria-hidden="true"></span>
+            </span>
+          </div>
+          <div class="content">
+            <div class="topbar">
+              <button class="icon-btn" type="button" onclick="showScreen('home')" aria-label="返回">
+                <svg class="icon" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"></path></svg>
+              </button>
+              <span class="title-area"></span>
+              <button class="icon-btn" aria-label="分享"><svg class="icon" viewBox="0 0 24 24"><path d="M7 12v7h10v-7"></path><path d="M12 4v11"></path><path d="m8 8 4-4 4 4"></path></svg></button>
+              <button class="icon-btn" aria-label="更多"><svg class="icon" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg></button>
+            </div>
+
+            <h1 class="detail-title">06-15 晚间倾诉</h1>
+            <p class="subtle">戒凡  06-15 22:18  35:47</p>
+
+            <div class="player">
+              <button class="play" type="button" aria-label="播放"><svg class="icon" viewBox="0 0 24 24"><path d="m9 6 9 6-9 6Z" fill="currentColor" stroke="none"></path></svg></button>
+              <div class="player-mid">
+                <div class="progress"><span></span></div>
+                <div class="player-times"><span>08:32</span><span>35:47</span></div>
+              </div>
+              <span class="speed">1.0x</span>
+            </div>
+
+            <div class="tabs">
+              <button class="active" type="button" data-tab="transcript" onclick="switchTab('transcript')">转写</button>
+              <button type="button" data-tab="summary" data-testid="tab-summary" onclick="switchTab('summary')">AI摘要</button>
+              <button type="button" data-tab="chapters" onclick="switchTab('chapters')">章节</button>
+            </div>
+
+            <div class="transcript active" data-pane="transcript">
+              <article class="utterance">
+                <span class="speaker rose">1</span>
+                <div>
+                  <div class="speaker-line">满月 00:00</div>
+                  <p>我现在最难受的地方，不是某一个选择本身，而是我不知道自己到底想成为什么样的人。</p>
+                </div>
+              </article>
+              <article class="utterance">
+                <span class="speaker">2</span>
+                <div>
+                  <div class="speaker-line">戒凡 00:31</div>
+                  <p>我听到的是，你不是缺一个答案，你更像是需要先把这几个担心分开看。</p>
+                </div>
+              </article>
+              <article class="utterance">
+                <span class="speaker rose">1</span>
+                <div>
+                  <div class="speaker-line">满月 01:18</div>
+                  <p>对。我很怕现在做决定，以后发现我只是因为焦虑才这样选。</p>
+                </div>
+              </article>
+              <article class="utterance">
+                <span class="speaker">2</span>
+                <div>
+                  <div class="speaker-line">戒凡 02:05</div>
+                  <p>那我们先不急着决定，先把你真正害怕失去什么讲出来。</p>
+                </div>
+              </article>
+            </div>
+
+            <div class="summary" data-pane="summary">
+              <article class="note-card">
+                <h3>本次主要困惑</h3>
+                <ul class="bullet-list">
+                  <li>不确定当前选择是出于真实意愿，还是被焦虑推动。</li>
+                  <li>反复出现“害怕选错”和“想重新定义自己”的表达。</li>
+                  <li>当前更需要把担心拆开，而不是立刻做结论。</li>
+                </ul>
+              </article>
+              <article class="note-card">
+                <h3>和历史记录的关联</h3>
+                <ul class="bullet-list">
+                  <li>“不知道自己想成为什么样的人”在最近 3 次记录中反复出现。</li>
+                  <li>“害怕以后后悔”与 06-13 的职业转型记录高度相关。</li>
+                  <li>系统不确定：核心压力来自职业变化，还是身份变化。</li>
+                </ul>
+              </article>
+              <button class="primary-action" type="button" data-testid="request-advice" onclick="startAdvice()">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M12 3v4"></path><path d="M12 17v4"></path><path d="M3 12h4"></path><path d="M17 12h4"></path><path d="m6.3 6.3 2.8 2.8"></path><path d="m14.9 14.9 2.8 2.8"></path><path d="m17.7 6.3-2.8 2.8"></path><path d="m9.1 14.9-2.8 2.8"></path></svg>
+                请求专家团建议
+              </button>
+            </div>
+
+            <div class="chapters" data-pane="chapters">
+              <article class="note-card">
+                <h3>00:00 迷茫的核心</h3>
+                <p>围绕“我到底想成为什么样的人”展开。</p>
+              </article>
+              <article class="note-card">
+                <h3>08:12 对选择的担心</h3>
+                <p>担心自己因为焦虑做出以后会后悔的决定。</p>
+              </article>
+              <article class="note-card">
+                <h3>22:40 先拆开问题</h3>
+                <p>暂时不做结论，先识别真正害怕失去的东西。</p>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="advice" aria-label="专家团建议">
+          <div class="status">
+            <span>14:47</span>
+            <span class="status-icons">
+              <span class="signal" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
+              <span class="battery" aria-hidden="true"></span>
+            </span>
+          </div>
+          <div class="content">
+            <div class="topbar">
+              <button class="icon-btn" type="button" onclick="showScreen('detail')" aria-label="返回">
+                <svg class="icon" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"></path></svg>
+              </button>
+              <span class="title-area"></span>
+              <button class="icon-btn" aria-label="复制"><svg class="icon" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"></rect><path d="M4 16V6a2 2 0 0 1 2-2h10"></path></svg></button>
+            </div>
+
+            <h1 class="detail-title">专家团建议</h1>
+            <p class="subtle">基于当前对话，参考 3 条相关历史记录</p>
+
+            <div class="advice-status" id="adviceStatus">
+              <div class="status-row done">
+                <span class="check">✓</span>
+                <span>
+                  <span class="status-label">读取当前对话</span>
+                  <span class="status-copy">已提取核心问题和关键原话</span>
+                </span>
+                <span class="tag">完成</span>
+              </div>
+              <div class="status-row running" data-progress-row>
+                <span class="check">2</span>
+                <span>
+                  <span class="status-label" id="progressTitle">参考历史记录</span>
+                  <span class="status-copy" id="progressCopy">正在查找最近相似主题</span>
+                </span>
+                <span class="tag">生成中</span>
+              </div>
+            </div>
+
+            <div class="expert-grid hidden" id="adviceResult">
+              <article class="advice-card">
+                <h3>专家团摘要</h3>
+                <ul class="bullet-list">
+                  <li>本次不是缺答案，而是需要先把焦虑、价值和现实约束分开。</li>
+                  <li>现在不宜立刻做重大决定，先澄清“我害怕失去什么”。</li>
+                  <li>可以先做一个 20 分钟的小练习，不把它变成计划压力。</li>
+                </ul>
+              </article>
+
+              <article class="round-card">
+                <div class="round-head">
+                  <span class="round-title">
+                    <strong>第一轮讨论</strong>
+                    <span>三位专家分别初判</span>
+                  </span>
+                  <span class="tag">初判</span>
+                </div>
+                <div class="agent-line">
+                  <span class="agent-name">人生教练</span>
+                  <span class="agent-text">核心不是选哪条路，而是先看她希望哪种生活方式继续出现。</span>
+                </div>
+                <div class="agent-line">
+                  <span class="agent-name">心理咨询</span>
+                  <span class="agent-text">“怕以后后悔”可能指向失控感，但只能作为可能性，不能下判断。</span>
+                </div>
+                <div class="agent-line">
+                  <span class="agent-name">现实行动</span>
+                  <span class="agent-text">现在不适合做大计划，先把担心拆成事实和想象两类。</span>
+                </div>
+              </article>
+
+              <article class="round-card">
+                <div class="round-head">
+                  <span class="round-title">
+                    <strong>第二轮讨论</strong>
+                    <span>互相质疑和压缩风险</span>
+                  </span>
+                  <span class="tag">质疑</span>
+                </div>
+                <div class="agent-line">
+                  <span class="agent-name">心理咨询</span>
+                  <span class="agent-text">提醒人生教练不要过早谈价值排序。她现在可能更需要情绪被安放。</span>
+                </div>
+                <div class="agent-line">
+                  <span class="agent-name">现实行动</span>
+                  <span class="agent-text">提醒心理咨询视角避免抽象解释太多，用户需要一个不会增加压力的小动作。</span>
+                </div>
+                <div class="agent-line">
+                  <span class="agent-name">人生教练</span>
+                  <span class="agent-text">同意降低抽象度，先不要求她回答“我是谁”这种大问题。</span>
+                </div>
+              </article>
+
+              <article class="round-card">
+                <div class="round-head">
+                  <span class="round-title">
+                    <strong>第三轮讨论</strong>
+                    <span>根据质疑修正结论</span>
+                  </span>
+                  <span class="tag">修正</span>
+                </div>
+                <div class="agent-line">
+                  <span class="agent-name">人生教练</span>
+                  <span class="agent-text">把“价值排序”降级为“想保护什么”，问题更小，也更适合当下。</span>
+                </div>
+                <div class="agent-line">
+                  <span class="agent-name">心理咨询</span>
+                  <span class="agent-text">保留“失控感”这个可能性，但必须标注不确定，不做诊断。</span>
+                </div>
+                <div class="agent-line">
+                  <span class="agent-name">现实行动</span>
+                  <span class="agent-text">最终行动只保留一个：写下三个担心失去的东西，不排序，不决策。</span>
+                </div>
+              </article>
+
+              <article class="judge-card">
+                <div class="expert-head">
+                  <h3>裁判收敛</h3>
+                  <span class="tag">最终取舍</span>
+                </div>
+                <p>裁判保留“先拆分担心”作为最终建议，删除“马上做价值排序”的版本。原因是后者更重，可能增加压力。</p>
+              </article>
+
+              <article class="advice-card">
+                <h3>最终建议</h3>
+                <ul class="bullet-list">
+                  <li>先暂停重大决定 24 小时。</li>
+                  <li>把担心写成事实和想象两列。</li>
+                  <li>下一次倾诉可以继续聊“我真正想保护什么”。</li>
+                </ul>
+                <div class="coach-reply" id="coachReply">我理解你的补充。这个信息更像是“关键事实修正”，系统会建议重新审视现实行动部分，但不需要推翻整份建议。</div>
+              </article>
+            </div>
+          </div>
+
+          <div class="input-bar">
+            <input id="followupInput" data-testid="followup-input" type="text" placeholder="补充、追问或反驳，系统会判断怎么处理">
+            <button class="send" type="button" data-testid="send-followup" onclick="sendFollowup()" aria-label="发送">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M5 12h13"></path><path d="m13 6 6 6-6 6"></path></svg>
+            </button>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="profile" aria-label="空间画像">
+          <div class="status">
+            <span>14:45</span>
+            <span class="status-icons">
+              <span class="signal" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
+              <span class="battery" aria-hidden="true"></span>
+            </span>
+          </div>
+          <div class="content">
+            <div class="topbar">
+              <button class="icon-btn" type="button" onclick="showScreen('home')" aria-label="返回">
+                <svg class="icon" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"></path></svg>
+              </button>
+              <span class="title-area"></span>
+              <button class="icon-btn" aria-label="编辑"><svg class="icon" viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg></button>
+            </div>
+            <h1 class="detail-title">空间画像</h1>
+            <p class="subtle">这是系统目前的理解，不是对人的定义。</p>
+
+            <div class="expert-grid" style="margin-top: 20px;">
+              <article class="profile-detail-card">
+                <h3>反复出现的主题</h3>
+                <ul class="bullet-list">
+                  <li>职业转型的不确定。</li>
+                  <li>害怕因为焦虑做选择。</li>
+                  <li>想重新理解自己的身份变化。</li>
+                </ul>
+                <div class="pill-row">
+                  <button class="pill" type="button">准确</button>
+                  <button class="pill" type="button">不准确</button>
+                  <button class="pill" type="button">补充</button>
+                </div>
+              </article>
+
+              <article class="profile-detail-card">
+                <h3>常见情绪</h3>
+                <ul class="bullet-list">
+                  <li>迷茫，经常出现在谈长期规划时。</li>
+                  <li>焦虑，常和“怕以后后悔”一起出现。</li>
+                  <li>疲惫，通常发生在连续讨论之后。</li>
+                </ul>
+                <div class="pill-row">
+                  <button class="pill" type="button">准确</button>
+                  <button class="pill" type="button">删除</button>
+                </div>
+              </article>
+
+              <article class="profile-detail-card">
+                <h3>系统不确定</h3>
+                <p>当前最核心压力可能来自职业变化，也可能来自身份变化。需要更多记录确认。</p>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <div class="recording-panel" id="recordingPanel" aria-live="polite">
+          <div class="recording-top">
+            <div>
+              <h3>正在录音</h3>
+              <p>会自动转写和生成摘要</p>
+            </div>
+            <div class="timer" id="timer">00:00</div>
+          </div>
+          <div class="wave" aria-hidden="true">
+            <span style="height: 22px"></span><span></span><span style="height: 38px"></span><span></span><span style="height: 28px"></span><span></span><span style="height: 44px"></span><span></span><span style="height: 30px"></span><span></span><span style="height: 24px"></span><span></span><span style="height: 40px"></span><span></span><span style="height: 26px"></span><span></span>
+          </div>
+          <div class="record-actions">
+            <button class="secondary-action" type="button" onclick="cancelRecording()">取消</button>
+            <button class="secondary-action stop-btn" type="button" data-testid="finish-recording" onclick="finishRecording()">结束并处理</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="side-panel">
+      <div class="side-card">
+        <h2>交互稿 V1</h2>
+        <p>这版先抄成熟 AI 听记的信息架构，但把倾诉产品的关键差异放到跨记录连接、空间画像和主动专家团建议。</p>
+        <div class="flow-list">
+          <div class="flow-item">
+            <span class="flow-dot">1</span>
+            <span><strong>首页像听记</strong><span>最近记录、搜索、空间画像和主录音按钮，用户不用选模板。</span></span>
+          </div>
+          <div class="flow-item">
+            <span class="flow-dot">2</span>
+            <span><strong>录完自动整理</strong><span>转写、摘要、章节和历史关联自动生成，不自动给人生建议。</span></span>
+          </div>
+          <div class="flow-item">
+            <span class="flow-dot">3</span>
+            <span><strong>建议主动触发</strong><span>专家团按总-多轮讨论-裁判结论输出，生成可等待也可离开。</span></span>
+          </div>
+        </div>
+        <div class="pill-row">
+          <button class="pill" type="button" onclick="showScreen('home')">看首页</button>
+          <button class="pill" type="button" onclick="showScreen('detail')">看详情</button>
+          <button class="pill" type="button" onclick="startAdvice()">看专家团</button>
+        </div>
+        <div class="hint">可点击右下录音按钮、记录列表、AI摘要 tab、请求专家团建议和底部输入框。</div>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    const screens = Array.from(document.querySelectorAll(".screen"));
+    const recordingPanel = document.getElementById("recordingPanel");
+    const timerEl = document.getElementById("timer");
+    let timerId = null;
+    let seconds = 0;
+    let adviceTimer = null;
+
+    function hideRecording() {
+      clearInterval(timerId);
+      recordingPanel.classList.remove("active");
+    }
+
+    function showScreen(name) {
+      hideRecording();
+      screens.forEach((screen) => {
+        screen.classList.toggle("active", screen.dataset.screen === name);
+      });
+    }
+
+    function startRecording() {
+      seconds = 0;
+      updateTimer();
+      recordingPanel.classList.add("active");
+      clearInterval(timerId);
+      timerId = setInterval(() => {
+        seconds += 1;
+        updateTimer();
+      }, 1000);
+    }
+
+    function updateTimer() {
+      const min = String(Math.floor(seconds / 60)).padStart(2, "0");
+      const sec = String(seconds % 60).padStart(2, "0");
+      timerEl.textContent = `${min}:${sec}`;
+    }
+
+    function cancelRecording() {
+      hideRecording();
+    }
+
+    function finishRecording() {
+      hideRecording();
+      const list = document.getElementById("recordList");
+      const item = document.createElement("button");
+      item.className = "list-row";
+      item.type = "button";
+      item.onclick = () => showScreen("detail");
+      item.innerHTML = `
+        <span class="thumb" aria-hidden="true"><span class="thumb-line"></span><span class="thumb-line"></span><span class="thumb-line"></span><span class="thumb-line"></span></span>
+        <span>
+          <span class="row-title">刚刚的倾诉记录</span>
+          <span class="row-meta"><span>处理中</span><span>${timerEl.textContent}</span><span>正在生成摘要</span></span>
+        </span>
+        <span class="more">...</span>
+      `;
+      list.prepend(item);
+    }
+
+    function switchTab(name) {
+      document.querySelectorAll(".tabs button").forEach((button) => {
+        button.classList.toggle("active", button.dataset.tab === name);
+      });
+      document.querySelectorAll("[data-pane]").forEach((pane) => {
+        pane.classList.toggle("active", pane.dataset.pane === name);
+      });
+    }
+
+    function startAdvice() {
+      showScreen("advice");
+      const result = document.getElementById("adviceResult");
+      const progressTitle = document.getElementById("progressTitle");
+      const progressCopy = document.getElementById("progressCopy");
+      const runningRow = document.querySelector("[data-progress-row]");
+      result.classList.add("hidden");
+      runningRow.className = "status-row running";
+      progressTitle.textContent = "参考历史记录";
+      progressCopy.textContent = "正在查找最近相似主题";
+
+      clearTimeout(adviceTimer);
+      adviceTimer = setTimeout(() => {
+        progressTitle.textContent = "专家团多轮讨论";
+        progressCopy.textContent = "正在初判、质疑、修正，并交给裁判收敛";
+      }, 1200);
+
+      adviceTimer = setTimeout(() => {
+        runningRow.className = "status-row done";
+        runningRow.querySelector(".check").textContent = "✓";
+        runningRow.querySelector(".tag").textContent = "完成";
+        progressTitle.textContent = "专家团建议完成";
+        progressCopy.textContent = "已生成总-多轮过程-裁判结论";
+        result.classList.remove("hidden");
+      }, 2600);
+    }
+
+    function sendFollowup() {
+      const input = document.getElementById("followupInput");
+      const reply = document.getElementById("coachReply");
+      if (!input.value.trim()) return;
+      reply.classList.add("active");
+      input.value = "";
+    }
+
+    function showAdviceDoneState() {
+      showScreen("advice");
+      const result = document.getElementById("adviceResult");
+      const progressTitle = document.getElementById("progressTitle");
+      const progressCopy = document.getElementById("progressCopy");
+      const runningRow = document.querySelector("[data-progress-row]");
+      runningRow.className = "status-row done";
+      runningRow.querySelector(".check").textContent = "✓";
+      runningRow.querySelector(".tag").textContent = "完成";
+      progressTitle.textContent = "专家团建议完成";
+      progressCopy.textContent = "已生成总-多轮过程-裁判结论";
+      result.classList.remove("hidden");
+    }
+
+    const initialParams = new URLSearchParams(window.location.search);
+    const initialScreen = initialParams.get("screen");
+    if (initialScreen) {
+      showScreen(initialScreen);
+    }
+    if (initialParams.get("done") === "1") {
+      showAdviceDoneState();
+    }
+  </script>
+</body>
+</html>

@@ -288,6 +288,18 @@ Trigger -> Capture -> Process -> Reflect -> Next Action
 
 不能验证时，要明确说明原因和剩余风险。
 
+### Browser Verification Preference
+
+本项目验证本地原型、localhost 页面和交互稿时，优先使用 Codex 官方 Chrome Extension 控制用户的 Chrome 浏览器。
+
+默认顺序：
+
+1. Codex Chrome Extension / `extension` browser。
+2. Codex in-app Browser / `iab`。
+3. 系统 Chrome、standalone Playwright 或其他截图方式。
+
+只有当前一个方式不可用、连接失败或不适合当前任务时，才降级到下一个方式。降级时要说明原因。
+
 ## Git and File Hygiene
 
 - 不要随意改动用户未要求的文件。
@@ -315,4 +327,3 @@ Trigger -> Capture -> Process -> Reflect -> Next Action
 4. 写第一个 `docs/specs/` 规格文档。
 5. 决定 iOS-only prototype 还是 iOS + Cloudflare backend prototype。
 6. 只在规格确认后 scaffold app 和服务端。
-
