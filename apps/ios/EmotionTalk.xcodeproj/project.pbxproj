@@ -1,0 +1,621 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		B10000000000000000000001 /* EmotionTalkApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000001 /* EmotionTalkApp.swift */; };
+		B10000000000000000000002 /* AppConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000002 /* AppConfiguration.swift */; };
+		B10000000000000000000003 /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000003 /* AppEnvironment.swift */; };
+		B10000000000000000000004 /* AppView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000004 /* AppView.swift */; };
+		B10000000000000000000005 /* ConversationHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000005 /* ConversationHomeView.swift */; };
+		B10000000000000000000006 /* ConversationSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000006 /* ConversationSession.swift */; };
+		B10000000000000000000007 /* ExpertAdviceTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000007 /* ExpertAdviceTimelineView.swift */; };
+		B10000000000000000000008 /* PlatformColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000008 /* PlatformColors.swift */; };
+		B10000000000000000000009 /* RecordingDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000009 /* RecordingDetailView.swift */; };
+		B1000000000000000000000A /* EmotionTalkAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000000000000000000000A /* EmotionTalkAPI.swift */; };
+		B1000000000000000000000B /* EmotionTalkModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000000000000000000000B /* EmotionTalkModels.swift */; };
+		B1000000000000000000000C /* PreviewEmotionTalkAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000000000000000000000C /* PreviewEmotionTalkAPI.swift */; };
+		B1000000000000000000000D /* EmotionTalkCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B30000000000000000000002 /* EmotionTalkCore.framework */; };
+		B1000000000000000000000E /* EmotionTalkCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = B30000000000000000000002 /* EmotionTalkCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		B1000000000000000000000F /* EmotionTalkUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000000000000000000000E /* EmotionTalkUITests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		B60000000000000000000002 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B00000000000000000000000 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B00000000000000000000002;
+			remoteInfo = EmotionTalkCore;
+		};
+		B60000000000000000000003 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B00000000000000000000000 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B00000000000000000000001;
+			remoteInfo = EmotionTalk;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		B50000000000000000000001 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				B1000000000000000000000E /* EmotionTalkCore.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		B20000000000000000000001 /* EmotionTalkApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmotionTalkApp.swift; sourceTree = "<group>"; };
+		B20000000000000000000002 /* AppConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfiguration.swift; sourceTree = "<group>"; };
+		B20000000000000000000003 /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
+		B20000000000000000000004 /* AppView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppView.swift; sourceTree = "<group>"; };
+		B20000000000000000000005 /* ConversationHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationHomeView.swift; sourceTree = "<group>"; };
+		B20000000000000000000006 /* ConversationSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationSession.swift; sourceTree = "<group>"; };
+		B20000000000000000000007 /* ExpertAdviceTimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpertAdviceTimelineView.swift; sourceTree = "<group>"; };
+		B20000000000000000000008 /* PlatformColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlatformColors.swift; sourceTree = "<group>"; };
+		B20000000000000000000009 /* RecordingDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingDetailView.swift; sourceTree = "<group>"; };
+		B2000000000000000000000A /* EmotionTalkAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmotionTalkAPI.swift; sourceTree = "<group>"; };
+		B2000000000000000000000B /* EmotionTalkModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmotionTalkModels.swift; sourceTree = "<group>"; };
+		B2000000000000000000000C /* PreviewEmotionTalkAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewEmotionTalkAPI.swift; sourceTree = "<group>"; };
+		B2000000000000000000000D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B2000000000000000000000E /* EmotionTalkUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmotionTalkUITests.swift; sourceTree = "<group>"; };
+		B30000000000000000000001 /* EmotionTalk.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EmotionTalk.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B30000000000000000000002 /* EmotionTalkCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = EmotionTalkCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		B30000000000000000000003 /* EmotionTalkUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = EmotionTalkUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		B40000000000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B1000000000000000000000D /* EmotionTalkCore.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B40000000000000000000002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B40000000000000000000003 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		B70000000000000000000000 = {
+			isa = PBXGroup;
+			children = (
+				B70000000000000000000001 /* EmotionTalk */,
+				B70000000000000000000002 /* Sources */,
+				B70000000000000000000006 /* EmotionTalkUITests */,
+				B70000000000000000000005 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		B70000000000000000000001 /* EmotionTalk */ = {
+			isa = PBXGroup;
+			children = (
+				B2000000000000000000000D /* Info.plist */,
+			);
+			path = EmotionTalk;
+			sourceTree = "<group>";
+		};
+		B70000000000000000000002 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				B70000000000000000000003 /* EmotionTalkApp */,
+				B70000000000000000000004 /* EmotionTalkCore */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		B70000000000000000000003 /* EmotionTalkApp */ = {
+			isa = PBXGroup;
+			children = (
+				B20000000000000000000002 /* AppConfiguration.swift */,
+				B20000000000000000000003 /* AppEnvironment.swift */,
+				B20000000000000000000004 /* AppView.swift */,
+				B20000000000000000000005 /* ConversationHomeView.swift */,
+				B20000000000000000000006 /* ConversationSession.swift */,
+				B20000000000000000000001 /* EmotionTalkApp.swift */,
+				B20000000000000000000007 /* ExpertAdviceTimelineView.swift */,
+				B20000000000000000000008 /* PlatformColors.swift */,
+				B20000000000000000000009 /* RecordingDetailView.swift */,
+			);
+			path = EmotionTalkApp;
+			sourceTree = "<group>";
+		};
+		B70000000000000000000004 /* EmotionTalkCore */ = {
+			isa = PBXGroup;
+			children = (
+				B2000000000000000000000A /* EmotionTalkAPI.swift */,
+				B2000000000000000000000B /* EmotionTalkModels.swift */,
+				B2000000000000000000000C /* PreviewEmotionTalkAPI.swift */,
+			);
+			path = EmotionTalkCore;
+			sourceTree = "<group>";
+		};
+		B70000000000000000000005 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				B30000000000000000000001 /* EmotionTalk.app */,
+				B30000000000000000000002 /* EmotionTalkCore.framework */,
+				B30000000000000000000003 /* EmotionTalkUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		B70000000000000000000006 /* EmotionTalkUITests */ = {
+			isa = PBXGroup;
+			children = (
+				B2000000000000000000000E /* EmotionTalkUITests.swift */,
+			);
+			path = EmotionTalkUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		B00000000000000000000001 /* EmotionTalk */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B80000000000000000000001 /* Build configuration list for PBXNativeTarget "EmotionTalk" */;
+			buildPhases = (
+				B90000000000000000000001 /* Sources */,
+				B40000000000000000000001 /* Frameworks */,
+				B50000000000000000000001 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				B60000000000000000000001 /* PBXTargetDependency */,
+			);
+			name = EmotionTalk;
+			productName = EmotionTalk;
+			productReference = B30000000000000000000001 /* EmotionTalk.app */;
+			productType = "com.apple.product-type.application";
+		};
+		B00000000000000000000002 /* EmotionTalkCore */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B80000000000000000000002 /* Build configuration list for PBXNativeTarget "EmotionTalkCore" */;
+			buildPhases = (
+				B90000000000000000000002 /* Sources */,
+				B40000000000000000000002 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = EmotionTalkCore;
+			productName = EmotionTalkCore;
+			productReference = B30000000000000000000002 /* EmotionTalkCore.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+		B00000000000000000000003 /* EmotionTalkUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B80000000000000000000003 /* Build configuration list for PBXNativeTarget "EmotionTalkUITests" */;
+			buildPhases = (
+				B90000000000000000000003 /* Sources */,
+				B40000000000000000000003 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				B60000000000000000000004 /* PBXTargetDependency */,
+			);
+			name = EmotionTalkUITests;
+			productName = EmotionTalkUITests;
+			productReference = B30000000000000000000003 /* EmotionTalkUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		B00000000000000000000000 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					B00000000000000000000001 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+					B00000000000000000000002 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+					B00000000000000000000003 = {
+						CreatedOnToolsVersion = 15.0;
+						TestTargetID = B00000000000000000000001;
+					};
+				};
+			};
+			buildConfigurationList = B80000000000000000000000 /* Build configuration list for PBXProject "EmotionTalk" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = B70000000000000000000000;
+			productRefGroup = B70000000000000000000005 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				B00000000000000000000001 /* EmotionTalk */,
+				B00000000000000000000002 /* EmotionTalkCore */,
+				B00000000000000000000003 /* EmotionTalkUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		B90000000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B10000000000000000000002 /* AppConfiguration.swift in Sources */,
+				B10000000000000000000003 /* AppEnvironment.swift in Sources */,
+				B10000000000000000000004 /* AppView.swift in Sources */,
+				B10000000000000000000005 /* ConversationHomeView.swift in Sources */,
+				B10000000000000000000006 /* ConversationSession.swift in Sources */,
+				B10000000000000000000001 /* EmotionTalkApp.swift in Sources */,
+				B10000000000000000000007 /* ExpertAdviceTimelineView.swift in Sources */,
+				B10000000000000000000008 /* PlatformColors.swift in Sources */,
+				B10000000000000000000009 /* RecordingDetailView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B90000000000000000000002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B1000000000000000000000A /* EmotionTalkAPI.swift in Sources */,
+				B1000000000000000000000B /* EmotionTalkModels.swift in Sources */,
+				B1000000000000000000000C /* PreviewEmotionTalkAPI.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B90000000000000000000003 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B1000000000000000000000F /* EmotionTalkUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		B60000000000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B00000000000000000000002 /* EmotionTalkCore */;
+			targetProxy = B60000000000000000000002 /* PBXContainerItemProxy */;
+		};
+		B60000000000000000000004 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B00000000000000000000001 /* EmotionTalk */;
+			targetProxy = B60000000000000000000003 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		BA0000000000000000000000 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		BA0000000000000000000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		BA0000000000000000000002 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 58TU38LDF9;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = EmotionTalk/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jeff.emotiontalk;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		BA0000000000000000000003 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 58TU38LDF9;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = EmotionTalk/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jeff.emotiontalk;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		BA0000000000000000000004 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = "";
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_DYLIB_INSTALL_NAME = "@rpath/$(EXECUTABLE_PATH)";
+				MACH_O_TYPE = mh_dylib;
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jeff.emotiontalk.core;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		BA0000000000000000000005 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = "";
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_DYLIB_INSTALL_NAME = "@rpath/$(EXECUTABLE_PATH)";
+				MACH_O_TYPE = mh_dylib;
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jeff.emotiontalk.core;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		BA0000000000000000000006 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.jeff.emotiontalk.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = EmotionTalk;
+			};
+			name = Debug;
+		};
+		BA0000000000000000000007 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.jeff.emotiontalk.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = EmotionTalk;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		B80000000000000000000000 /* Build configuration list for PBXProject "EmotionTalk" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BA0000000000000000000000 /* Debug */,
+				BA0000000000000000000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B80000000000000000000001 /* Build configuration list for PBXNativeTarget "EmotionTalk" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BA0000000000000000000002 /* Debug */,
+				BA0000000000000000000003 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B80000000000000000000002 /* Build configuration list for PBXNativeTarget "EmotionTalkCore" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BA0000000000000000000004 /* Debug */,
+				BA0000000000000000000005 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B80000000000000000000003 /* Build configuration list for PBXNativeTarget "EmotionTalkUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BA0000000000000000000006 /* Debug */,
+				BA0000000000000000000007 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = B00000000000000000000000 /* Project object */;
+}

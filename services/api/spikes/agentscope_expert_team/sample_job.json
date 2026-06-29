@@ -1,0 +1,13 @@
+{
+  "jobId": "sample-job-001",
+  "spaceId": "sample-space-001",
+  "recordingId": "sample-recording-001",
+  "title": "职业转型、家庭沟通和长期规划困惑",
+  "transcriptSummary": "用户最近对职业转型、家庭沟通和长期规划产生困惑，希望获得克制、 grounded、不过度打扰自己的建议。",
+  "constraints": [
+    "不要做心理诊断",
+    "不要给极端行动建议",
+    "过程要可展示",
+    "最终建议要点到为止"
+  ]
+}

@@ -1,0 +1,17 @@
+.DS_Store
+.git
+.idea
+.qoder
+.tmp
+.data
+.venv
+**/__pycache__
+**/*.pyc
+**/node_modules
+**/dist
+**/*.tsbuildinfo
+outputs
+prototypes/**/screenshots
+.env
+.env.*
+!.env.example

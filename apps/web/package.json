@@ -1,0 +1,25 @@
+{
+  "name": "emotion-talk-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "lint": "tsc -b --pretty false"
+  },
+  "dependencies": {
+    "@phosphor-icons/react": "^2.1.10",
+    "@vitejs/plugin-react": "^4.3.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.0",
+    "@types/react": "^19.0.1",
+    "@types/react-dom": "^19.0.2"
+  }
+}

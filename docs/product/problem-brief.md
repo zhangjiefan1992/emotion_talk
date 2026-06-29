@@ -386,7 +386,7 @@ V1 成立的核心信号：
 
 ## Open Questions
 
-- 第一版是只做本地 iOS prototype，还是 iOS + Cloudflare 后端。
+- 第一版是只做本地 iOS prototype，还是 iOS + 服务端 prototype。
 - 录音和转写是否上传云端处理，以及隐私策略如何设计。
 - Space 的成员权限如何从最小规则开始。
 - 是否需要账号系统，还是先本地/私有 invite。

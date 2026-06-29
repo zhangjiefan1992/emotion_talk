@@ -1,0 +1,991 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Emotion Talk API",
+    "version": "0.2.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Health Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/deliberation-jobs/from-markdown": {
+      "post": {
+        "summary": "Create Deliberation Job",
+        "operationId": "create_deliberation_job_deliberation_jobs_from_markdown_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkdownJobRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Create Deliberation Job Deliberation Jobs From Markdown Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/spaces": {
+      "post": {
+        "summary": "Create Space",
+        "operationId": "create_space_spaces_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SpaceCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Create Space Spaces Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/spaces/{space_id}": {
+      "get": {
+        "summary": "Get Space",
+        "operationId": "get_space_spaces__space_id__get",
+        "parameters": [
+          {
+            "name": "space_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Space Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Space Spaces  Space Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recordings": {
+      "post": {
+        "summary": "Create Recording",
+        "operationId": "create_recording_recordings_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordingCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Create Recording Recordings Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recordings/{recording_id}": {
+      "get": {
+        "summary": "Get Recording",
+        "operationId": "get_recording_recordings__recording_id__get",
+        "parameters": [
+          {
+            "name": "recording_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Recording Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Recording Recordings  Recording Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recordings/{recording_id}/transcript": {
+      "post": {
+        "summary": "Submit Transcript",
+        "operationId": "submit_transcript_recordings__recording_id__transcript_post",
+        "parameters": [
+          {
+            "name": "recording_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Recording Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TranscriptSubmitRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Submit Transcript Recordings  Recording Id  Transcript Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recordings/{recording_id}/audio-upload-authorizations": {
+      "post": {
+        "summary": "Create Audio Upload Authorization",
+        "operationId": "create_audio_upload_authorization_recordings__recording_id__audio_upload_authorizations_post",
+        "parameters": [
+          {
+            "name": "recording_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Recording Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AudioUploadAuthorizationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Create Audio Upload Authorization Recordings  Recording Id  Audio Upload Authorizations Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/asr-sessions": {
+      "post": {
+        "summary": "Create Asr Session",
+        "operationId": "create_asr_session_asr_sessions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AsrSessionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Create Asr Session Asr Sessions Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recordings/{recording_id}/summary-jobs": {
+      "post": {
+        "summary": "Create Summary Job",
+        "operationId": "create_summary_job_recordings__recording_id__summary_jobs_post",
+        "parameters": [
+          {
+            "name": "recording_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Recording Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SummaryJobRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Create Summary Job Recordings  Recording Id  Summary Jobs Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recordings/{recording_id}/expert-advice-jobs": {
+      "post": {
+        "summary": "Create Recording Expert Advice Job",
+        "operationId": "create_recording_expert_advice_job_recordings__recording_id__expert_advice_jobs_post",
+        "parameters": [
+          {
+            "name": "recording_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Recording Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExpertAdviceJobRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Create Recording Expert Advice Job Recordings  Recording Id  Expert Advice Jobs Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/expert-advice-jobs/{job_id}": {
+      "get": {
+        "summary": "Get Expert Advice Job",
+        "operationId": "get_expert_advice_job_expert_advice_jobs__job_id__get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Expert Advice Job Expert Advice Jobs  Job Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/expert-advice-jobs/{job_id}/events": {
+      "get": {
+        "summary": "Get Expert Advice Job Events",
+        "operationId": "get_expert_advice_job_events_expert_advice_jobs__job_id__events_get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "title": "Response Get Expert Advice Job Events Expert Advice Jobs  Job Id  Events Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/expert-advice-jobs/{job_id}/artifact": {
+      "get": {
+        "summary": "Get Expert Advice Job Artifact",
+        "operationId": "get_expert_advice_job_artifact_expert_advice_jobs__job_id__artifact_get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Expert Advice Job Artifact Expert Advice Jobs  Job Id  Artifact Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AsrSessionRequest": {
+        "properties": {
+          "spaceId": {
+            "type": "string",
+            "title": "Spaceid"
+          },
+          "recordingId": {
+            "type": "string",
+            "title": "Recordingid"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider",
+            "default": "paraformer"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "default": "paraformer-realtime-8k-v2"
+          }
+        },
+        "type": "object",
+        "required": [
+          "spaceId",
+          "recordingId"
+        ],
+        "title": "AsrSessionRequest"
+      },
+      "AudioUploadAuthorizationRequest": {
+        "properties": {
+          "mimeType": {
+            "type": "string",
+            "title": "Mimetype",
+            "default": "audio/mpeg"
+          },
+          "byteSize": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bytesize"
+          },
+          "checksumSha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checksumsha256"
+          }
+        },
+        "type": "object",
+        "title": "AudioUploadAuthorizationRequest"
+      },
+      "ExpertAdviceJobRequest": {
+        "properties": {
+          "contextScope": {
+            "type": "string",
+            "title": "Contextscope",
+            "default": "current_only"
+          },
+          "historyLimit": {
+            "type": "integer",
+            "maximum": 20.0,
+            "minimum": 0.0,
+            "title": "Historylimit",
+            "default": 5
+          },
+          "historicalContext": {
+            "items": {
+              "$ref": "#/components/schemas/HistoricalContextRequest"
+            },
+            "type": "array",
+            "title": "Historicalcontext"
+          },
+          "includeProfile": {
+            "type": "boolean",
+            "title": "Includeprofile",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "ExpertAdviceJobRequest"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HistoricalContextRequest": {
+        "properties": {
+          "sourceType": {
+            "type": "string",
+            "title": "Sourcetype",
+            "default": "recording"
+          },
+          "sourceId": {
+            "type": "string",
+            "title": "Sourceid"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "createdAtText": {
+            "type": "string",
+            "title": "Createdattext",
+            "default": ""
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "keyPoints": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Keypoints"
+          },
+          "relevance": {
+            "type": "string",
+            "title": "Relevance",
+            "default": "selected"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sourceId",
+          "title",
+          "summary"
+        ],
+        "title": "HistoricalContextRequest"
+      },
+      "MarkdownJobRequest": {
+        "properties": {
+          "markdown": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Markdown"
+          },
+          "sourceType": {
+            "type": "string",
+            "title": "Sourcetype",
+            "default": "recording"
+          },
+          "sourceId": {
+            "type": "string",
+            "title": "Sourceid",
+            "default": "dev-recording"
+          },
+          "contextScope": {
+            "type": "string",
+            "title": "Contextscope",
+            "default": "current_only"
+          },
+          "historicalContext": {
+            "items": {
+              "$ref": "#/components/schemas/HistoricalContextRequest"
+            },
+            "type": "array",
+            "title": "Historicalcontext"
+          }
+        },
+        "type": "object",
+        "required": [
+          "markdown"
+        ],
+        "title": "MarkdownJobRequest"
+      },
+      "RecordingCreateRequest": {
+        "properties": {
+          "spaceId": {
+            "type": "string",
+            "title": "Spaceid"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "startedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startedat"
+          },
+          "clientRecordingId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clientrecordingid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "spaceId"
+        ],
+        "title": "RecordingCreateRequest"
+      },
+      "SpaceCreateRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "default": "默认倾诉空间"
+          }
+        },
+        "type": "object",
+        "title": "SpaceCreateRequest"
+      },
+      "SummaryJobRequest": {
+        "properties": {
+          "force": {
+            "type": "boolean",
+            "title": "Force",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "SummaryJobRequest"
+      },
+      "TranscriptSegmentRequest": {
+        "properties": {
+          "speaker": {
+            "type": "string",
+            "title": "Speaker",
+            "default": "发言人"
+          },
+          "timestamp": {
+            "type": "string",
+            "title": "Timestamp",
+            "default": ""
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Text"
+          },
+          "startMs": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startms"
+          },
+          "endMs": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Endms"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "TranscriptSegmentRequest"
+      },
+      "TranscriptSubmitRequest": {
+        "properties": {
+          "markdown": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Markdown"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "createdAtText": {
+            "type": "string",
+            "title": "Createdattext",
+            "default": ""
+          },
+          "durationText": {
+            "type": "string",
+            "title": "Durationtext",
+            "default": ""
+          },
+          "segments": {
+            "items": {
+              "$ref": "#/components/schemas/TranscriptSegmentRequest"
+            },
+            "type": "array",
+            "title": "Segments"
+          }
+        },
+        "type": "object",
+        "title": "TranscriptSubmitRequest"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}
