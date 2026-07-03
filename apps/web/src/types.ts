@@ -33,6 +33,7 @@ export interface TranscriptMetadata {
   createdAtText: string;
   durationText: string;
   segmentCount: number;
+  segments?: TranscriptSegment[];
 }
 
 export interface AudioObject {

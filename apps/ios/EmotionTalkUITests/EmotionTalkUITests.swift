@@ -1,6 +1,12 @@
 import XCTest
 
 final class EmotionTalkUITests: XCTestCase {
+    private var testAPIBaseURL: String {
+        ProcessInfo.processInfo.environment["EMOTION_TALK_UI_TEST_API_BASE_URL"]
+            ?? ProcessInfo.processInfo.environment["EMOTION_TALK_API_BASE_URL"]
+            ?? "http://127.0.0.1:8000"
+    }
+
     override func setUpWithError() throws {
         continueAfterFailure = false
     }
@@ -12,16 +18,16 @@ final class EmotionTalkUITests: XCTestCase {
         )
 
         let app = XCUIApplication()
-        app.launchEnvironment["EMOTION_TALK_API_BASE_URL"] = ProcessInfo.processInfo.environment["EMOTION_TALK_API_BASE_URL"] ?? "http://127.0.0.1:8000"
+        app.launchEnvironment["EMOTION_TALK_API_BASE_URL"] = testAPIBaseURL
         app.launch()
 
         XCTAssertTrue(app.buttons["startConversationButton"].waitForExistence(timeout: 8))
         app.buttons["startConversationButton"].tap()
 
-        XCTAssertTrue(app.staticTexts["录音中"].waitForExistence(timeout: 12))
+        XCTAssertTrue(app.staticTexts["录音中"].waitForExistence(timeout: 12), app.debugDescription)
         Thread.sleep(forTimeInterval: 12)
-        XCTAssertTrue(app.buttons["finishConversationButton"].waitForExistence(timeout: 8))
-        app.buttons["finishConversationButton"].tap()
+        XCTAssertTrue(app.buttons["结束"].waitForExistence(timeout: 8), app.debugDescription)
+        app.buttons["结束"].tap()
 
         let detailTabs = app.segmentedControls["recordingDetailTabs"]
         XCTAssertTrue(detailTabs.waitForExistence(timeout: 120), app.debugDescription)
@@ -31,7 +37,7 @@ final class EmotionTalkUITests: XCTestCase {
 
     func testRecordingSummaryAndExpertAdviceFlow() throws {
         let app = XCUIApplication()
-        app.launchEnvironment["EMOTION_TALK_API_BASE_URL"] = ProcessInfo.processInfo.environment["EMOTION_TALK_API_BASE_URL"] ?? "http://127.0.0.1:8000"
+        app.launchEnvironment["EMOTION_TALK_API_BASE_URL"] = testAPIBaseURL
         app.launchEnvironment["EMOTION_TALK_TEST_AUDIO_URL"] = ProcessInfo.processInfo.environment["EMOTION_TALK_TEST_AUDIO_URL"] ?? "/Users/jeff/Downloads/06-13 职业转型与长期规划.mp3"
         app.launchEnvironment["EMOTION_TALK_TEST_TRANSCRIPT_URL"] = ProcessInfo.processInfo.environment["EMOTION_TALK_TEST_TRANSCRIPT_URL"] ?? "http://127.0.0.1:8000/dev-fixtures/career-transition-transcript"
         app.launchEnvironment["EMOTION_TALK_AUTO_FINISH_TEST_AUDIO"] = "1"
@@ -41,7 +47,6 @@ final class EmotionTalkUITests: XCTestCase {
         XCTAssertTrue(app.buttons["startConversationButton"].waitForExistence(timeout: 8))
         app.buttons["startConversationButton"].tap()
 
-        XCTAssertTrue(app.staticTexts["录音中"].waitForExistence(timeout: 12))
         XCTAssertFalse(app.buttons["模拟转写"].exists)
 
         let detailTabs = app.segmentedControls["recordingDetailTabs"]

@@ -448,8 +448,16 @@ async def _run_realtime_asr(websocket: WebSocket) -> None:
 
     loop = asyncio.get_running_loop()
     events: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
+    model = websocket.query_params.get("model") or os.getenv("ASR_REALTIME_MODEL", "paraformer-realtime-v2")
+    sample_rate = _realtime_sample_rate(websocket.query_params.get("sample_rate"), model=model)
 
     class Callback(RecognitionCallback):
+        def on_open(self) -> None:
+            loop.call_soon_threadsafe(
+                events.put_nowait,
+                {"type": "ready", "model": model, "sampleRate": sample_rate},
+            )
+
         def on_event(self, result: RecognitionResult) -> None:
             sentence = result.get_sentence()
             for item in sentence if isinstance(sentence, list) else [sentence]:
@@ -467,7 +475,13 @@ async def _run_realtime_asr(websocket: WebSocket) -> None:
                 )
 
         def on_error(self, result: RecognitionResult) -> None:
-            loop.call_soon_threadsafe(events.put_nowait, {"type": "error", "message": str(result.message or result)})
+            loop.call_soon_threadsafe(
+                events.put_nowait,
+                {
+                    "type": "error",
+                    "message": str(getattr(result, "message", None) or getattr(result, "code", None) or "Realtime ASR failed"),
+                },
+            )
 
         def on_complete(self) -> None:
             loop.call_soon_threadsafe(events.put_nowait, {"type": "complete"})
@@ -476,13 +490,12 @@ async def _run_realtime_asr(websocket: WebSocket) -> None:
             loop.call_soon_threadsafe(events.put_nowait, None)
 
     recognition = Recognition(
-        model=os.getenv("ASR_REALTIME_MODEL", "paraformer-realtime-v2"),
+        model=model,
         callback=Callback(),
         format="pcm",
-        sample_rate=16000,
+        sample_rate=sample_rate,
         api_key=api_key,
     )
-    recognition.start()
 
     async def send_events() -> None:
         while True:
@@ -493,14 +506,40 @@ async def _run_realtime_asr(websocket: WebSocket) -> None:
 
     sender = asyncio.create_task(send_events())
     try:
+        try:
+            recognition.start()
+        except Exception as exc:
+            await websocket.send_json({"type": "error", "message": f"Realtime ASR start failed: {exc}"})
+            await websocket.close()
+            return
         while True:
             recognition.send_audio_frame(await websocket.receive_bytes())
     except WebSocketDisconnect:
         pass
+    except Exception as exc:
+        await events.put({"type": "error", "message": f"Realtime ASR stream failed: {exc}"})
     finally:
         if getattr(recognition, "_running", False):
-            await asyncio.to_thread(recognition.stop)
+            try:
+                await asyncio.to_thread(recognition.stop)
+            except Exception:
+                pass
         sender.cancel()
+
+
+def _realtime_sample_rate(raw_value: str | None, *, model: str) -> int:
+    if raw_value:
+        try:
+            sample_rate = int(raw_value)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail="sample_rate must be an integer") from exc
+        if sample_rate not in {8000, 16000}:
+            raise HTTPException(status_code=422, detail="sample_rate must be 8000 or 16000")
+        return sample_rate
+    configured = os.getenv("ASR_REALTIME_SAMPLE_RATE")
+    if configured:
+        return _realtime_sample_rate(configured, model=model)
+    return 8000 if "8k" in model.lower() else 16000
 
 
 def _transcribe_audio_with_dashscope(audio_bytes: bytes, *, mime_type: str) -> list[TranscriptSegment]:
@@ -636,6 +675,14 @@ def _recording_response(recording: dict[str, Any]) -> dict[str, Any]:
             "createdAtText": transcript.created_at_text,
             "durationText": transcript.duration_text,
             "segmentCount": len(transcript.segments),
+            "segments": [
+                {
+                    "speaker": segment.speaker,
+                    "timestamp": segment.timestamp,
+                    "text": segment.text,
+                }
+                for segment in transcript.segments
+            ],
         }
         if transcript
         else None,

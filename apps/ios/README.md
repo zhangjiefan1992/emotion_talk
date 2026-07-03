@@ -1,6 +1,8 @@
 # iOS App
 
-SwiftUI client for the first product surface.
+Legacy SwiftUI spike for the first product surface.
+
+Status: as of 2026-07-01, the primary client line has moved to the uni-app implementation in `apps/web` so one codebase can target H5, iOS App, Android App, and mini programs. Keep this native SwiftUI target as a reference prototype and API smoke-test surface until it is explicitly revived.
 
 ## Selected Stack
 

@@ -5,9 +5,9 @@ Status: active validation
 
 ## 当前结论
 
-项目已经具备“服务端 + iOS + H5”的第一版闭环骨架，但 iOS 真机仍停在 `failed to connect`，不能视为真机全链路完成。
+项目已经具备“服务端 + iOS + H5”的第一版闭环骨架。远程服务端到百炼实时 ASR 已打通，iOS Simulator 通过本地 SSH tunnel 已完成真实麦克风录音、实时转写、自动纪要闭环。真机因为当前没有数据线，本轮未重新验收。
 
-当前验收入口先使用公网 IP：
+远程公网入口：
 
 ```text
 API base: http://121.41.92.161/api
@@ -15,6 +15,30 @@ Health:   http://121.41.92.161/api/health
 ```
 
 `emotalk.xyz` 已购买并配置 A 记录，但大陆 ECS 使用域名访问会被 ICP 备案拦截；域名不作为当前真机验收路径。
+
+当前模拟器验收入口使用本地 tunnel：
+
+```text
+Local API base: http://127.0.0.1:8002/api
+Tunnel:         127.0.0.1:8002 -> 121.41.92.161:80
+```
+
+2026-06-29 更新：
+
+- 设计目标仍然是 iOS 通过百炼/DashScope iOS SDK 直连实时 ASR，服务端签发临时凭证。
+- 当前代码不是该最终设计；当前代码使用 iOS -> 本服务端 WebSocket -> 服务端 DashScope Python SDK -> 百炼 ASR 的 realtime proxy 方案。
+- 这个 proxy 方案只作为真机链路 spike/兜底路径，不应被误认为最终 iOS SDK 直连方案。
+- 已修复当前 proxy 链路的两个连接问题：Nginx WebSocket Upgrade 代理头、API 容器缺少 `websockets` 依赖。
+- 远端已验证 `ws://121.41.92.161/api/asr/realtime` 可以建立 WebSocket 连接。
+
+2026-07-03 更新：
+
+- 服务端 `WS /asr/realtime` 已支持 `model`、`sample_rate` 参数，默认使用 `paraformer-realtime-v2` 和 16k PCM。
+- 已用真实百炼/DashScope 调用验证远程实时 ASR：`ws://121.41.92.161/api/asr/realtime?sample_rate=16000&model=paraformer-realtime-v2` 可返回 transcript event。
+- 当前 Mac 的 Foundation/URLSession 访问公网 HTTP/HTTPS 会出现 `NSURLErrorDomain -1005 The network connection was lost`；`curl`、Python 正常。这会导致 iOS Simulator/App 直接访问 `http://121.41.92.161/api` 失败。
+- 临时验收路径改为 SSH tunnel：`127.0.0.1:8002 -> 121.41.92.161:80`，App 访问 `http://127.0.0.1:8002/api`。
+- 在 iPhone 17 Pro Simulator 上已完成真实麦克风验收：开始录音后，Mac 麦克风采集系统播放语音，iOS App 将 16k PCM 通过 WebSocket 发送到服务端，服务端调用百炼实时 ASR，App 实时展示转写，点击结束后提交 transcript 并生成自动纪要，进入详情页可看到转写片段。
+- `testLiveMicrophoneRecordingCreatesSummary` 作为真实麦克风验收测试保留，但默认跳过；需要手动打开时要保证 tunnel 已启动，并临时开启测试。
 
 ## 服务端已支持
 
@@ -55,7 +79,8 @@ services/api/
 - 生产 OSS 上传还没有接入，目前 `audio-upload-authorizations` 是 dev stub。
 - 没有账号、权限、空间成员、多用户隔离。
 - 没有 HTTPS。
-- `apps/web/nginx.conf` 当前没有 WebSocket `Upgrade` / `Connection` 代理头；如果 iOS 通过 `ws://121.41.92.161/api/asr/realtime` 走 Nginx，这里可能导致实时 ASR 连接失败。
+- 当前 realtime proxy 已具备 WebSocket 代理能力，但不是最终推荐的 V1 iOS ASR 形态。
+- `/asr-sessions` 仍是 dev stub，没有真正签发百炼/DashScope 临时凭证。
 
 ## iOS 已支持
 
@@ -73,7 +98,7 @@ apps/ios/
 - Xcode scheme 当前设置：
 
 ```text
-EMOTION_TALK_API_BASE_URL=http://121.41.92.161/api
+EMOTION_TALK_API_BASE_URL=http://127.0.0.1:8002/api
 ```
 
 - `AppConfiguration.realtimeASRURL(for:)` 已把 REST base 转换为：
@@ -95,13 +120,15 @@ ws://121.41.92.161/api/asr/realtime
 
 - `swift test` 通过。
 - 新增测试覆盖 `http://121.41.92.161/api -> ws://121.41.92.161/api/asr/realtime`。
+- iPhone 17 Pro Simulator 真实麦克风 + 百炼实时转写 + 自动纪要 UI 验收通过。
 - Xcode 真机签名、开发者模式、信任开发者已经由用户推进完成。
 
 当前 iOS 风险：
 
-- `AppConfiguration.apiBaseURL` 代码默认值仍是 `http://127.0.0.1:8000`。只有从 Xcode scheme 启动时才会注入公网 IP；如果用户在手机桌面手动点 App，可能仍连接本机回环地址，导致 `failed to connect`。
+- `AppConfiguration.apiBaseURL` 当前默认指向 `http://121.41.92.161/api`，这是为了真机 IP 验收的开发期默认值；备案/HTTPS 完成后应替换为正式配置。
 - `RealtimeASRClient` 当前吞掉 WebSocket 接收和发送错误，UI 上不容易区分 REST 失败、WebSocket 失败、ASR provider 失败。
-- 真机 `failed to connect` 尚未定位到具体层级，不能认为是签名问题或麦克风问题。
+- Mac/iOS Simulator 直接访问公网 IP 的 URLSession 当前会失败；本地模拟器验收需通过 `127.0.0.1:8002` tunnel，真机验收应优先使用 HTTPS 域名或继续定位当前网络环境下的 Foundation 连接问题。
+- 真机 `failed to connect` 的服务端 WebSocket 代理层已修复并验证；下一步如果仍失败，应查看 App 实际错误和手机网络访问。
 
 ## H5 已支持
 

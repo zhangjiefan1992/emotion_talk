@@ -285,6 +285,8 @@ private final class LiveSpeechRecorder {
     private var audioFile: AVAudioFile?
     private var fixtureTask: Task<Void, Never>?
     private var lastTranscript: String?
+    private var finalTranscriptTexts: [String] = []
+    private var interimTranscriptText: String?
     private(set) var audioFileURL: URL?
 
     func start(
@@ -298,6 +300,8 @@ private final class LiveSpeechRecorder {
         stop()
         audioFileURL = nil
         lastTranscript = nil
+        finalTranscriptTexts = []
+        interimTranscriptText = nil
         if let testTranscriptURL {
             try await startTranscriptFixture(
                 audioURL: testAudioURL,
@@ -317,11 +321,26 @@ private final class LiveSpeechRecorder {
             throw LiveSpeechRecorderError.microphoneUnavailable
         }
 
-        if let realtimeASRURL {
-            realtimeASR.start(url: realtimeASRURL) { [weak self] text in
-                self?.lastTranscript = text
-                onTranscript(text)
+        func makeRealtimeURL(_ baseURL: URL) -> URL {
+            guard var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else {
+                return baseURL
             }
+            var queryItems = components.queryItems ?? []
+            queryItems.append(URLQueryItem(name: "sample_rate", value: "16000"))
+            components.queryItems = queryItems
+            return components.url ?? baseURL
+        }
+
+        if let realtimeASRURL {
+            realtimeASR.start(
+                url: makeRealtimeURL(realtimeASRURL),
+                onEvent: { [weak self] event in
+                    self?.handleRealtimeASREvent(event, onTranscript: onTranscript, onFinished: onFinished)
+                }
+            )
+        } else {
+            onFinished(.failure(LiveSpeechRecorderError.realtimeASRUnavailable))
+            return
         }
 
         let url = FileManager.default.temporaryDirectory
@@ -349,6 +368,8 @@ private final class LiveSpeechRecorder {
         stopLiveAudio()
         realtimeASR.stop()
         audioFile = nil
+        finalTranscriptTexts = []
+        interimTranscriptText = nil
         deactivateAudioSession()
     }
 
@@ -360,13 +381,54 @@ private final class LiveSpeechRecorder {
         audioFile = nil
         try? await Task.sleep(for: .milliseconds(1200))
 
-        let liveText = lastTranscript?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let liveText = currentRealtimeTranscript().trimmingCharacters(in: .whitespacesAndNewlines)
         deactivateAudioSession()
 
-        if let liveText, !liveText.isEmpty {
+        if !liveText.isEmpty {
             return liveText
         }
         return nil
+    }
+
+    private func handleRealtimeASREvent(
+        _ event: RealtimeASREvent,
+        onTranscript: @escaping (String) -> Void,
+        onFinished: @escaping (Result<Void, Error>) -> Void
+    ) {
+        switch event.type {
+        case "ready":
+            return
+        case "transcript":
+            let text = event.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !text.isEmpty else { return }
+            if event.isFinal {
+                if finalTranscriptTexts.last != text {
+                    finalTranscriptTexts.append(text)
+                }
+                interimTranscriptText = nil
+            } else {
+                interimTranscriptText = text
+            }
+            let aggregate = currentRealtimeTranscript().trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !aggregate.isEmpty else { return }
+            lastTranscript = aggregate
+            onTranscript(aggregate)
+        case "error":
+            onFinished(.failure(LiveSpeechRecorderError.realtimeASRFailed(event.message ?? "实时转写失败。")))
+        default:
+            return
+        }
+    }
+
+    private func currentRealtimeTranscript() -> String {
+        var texts = finalTranscriptTexts
+        if let interimTranscriptText, !interimTranscriptText.isEmpty {
+            texts.append(interimTranscriptText)
+        }
+        if texts.isEmpty, let lastTranscript {
+            return lastTranscript
+        }
+        return texts.joined(separator: "\n")
     }
 
     private func stopLiveAudio() {
@@ -468,7 +530,7 @@ private final class RealtimeASRClient {
     private var task: URLSessionWebSocketTask?
     private var receiveTask: Task<Void, Never>?
 
-    func start(url: URL, onTranscript: @escaping (String) -> Void) {
+    func start(url: URL, onEvent: @escaping (RealtimeASREvent) -> Void) {
         stop()
         let task = URLSession.shared.webSocketTask(with: url)
         self.task = task
@@ -479,12 +541,10 @@ private final class RealtimeASRClient {
                     let message = try await task.receive()
                     guard case .string(let text) = message,
                           let data = text.data(using: .utf8),
-                          let event = try? JSONDecoder().decode(RealtimeASREvent.self, from: data),
-                          event.type == "transcript",
-                          !event.text.isEmpty else {
+                          let event = try? JSONDecoder().decode(RealtimeASREvent.self, from: data) else {
                         continue
                     }
-                    onTranscript(event.text)
+                    onEvent(event)
                 } catch {
                     return
                 }
@@ -508,6 +568,29 @@ private final class RealtimeASRClient {
 private struct RealtimeASREvent: Decodable {
     let type: String
     let text: String
+    let isFinal: Bool
+    let startMs: Int?
+    let endMs: Int?
+    let message: String?
+
+    enum CodingKeys: String, CodingKey {
+        case type
+        case text
+        case isFinal
+        case startMs
+        case endMs
+        case message
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        type = try container.decode(String.self, forKey: .type)
+        text = try container.decodeIfPresent(String.self, forKey: .text) ?? ""
+        isFinal = try container.decodeIfPresent(Bool.self, forKey: .isFinal) ?? false
+        startMs = try container.decodeIfPresent(Int.self, forKey: .startMs)
+        endMs = try container.decodeIfPresent(Int.self, forKey: .endMs)
+        message = try container.decodeIfPresent(String.self, forKey: .message)
+    }
 }
 
 private enum TranscriptFixtureLoader {
@@ -600,6 +683,8 @@ enum LiveSpeechRecorderError: LocalizedError {
     case microphonePermissionDenied
     case speechUnavailable
     case microphoneUnavailable
+    case realtimeASRUnavailable
+    case realtimeASRFailed(String)
     case emptyTranscript
     case fixtureUnavailable(Int)
     case fixtureDecodingFailed
@@ -614,6 +699,10 @@ enum LiveSpeechRecorderError: LocalizedError {
             "当前设备暂时无法使用系统语音识别。"
         case .microphoneUnavailable:
             "没有检测到可用麦克风。"
+        case .realtimeASRUnavailable:
+            "实时转写服务地址不可用，请检查服务端配置。"
+        case .realtimeASRFailed(let message):
+            "实时转写失败：\(message)"
         case .emptyTranscript:
             "云端语音识别没有返回文字。请确认麦克风输入，录音 5 秒以上后再结束。"
         case .fixtureUnavailable(let statusCode):

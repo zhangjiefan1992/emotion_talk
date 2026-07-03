@@ -1,0 +1,25 @@
+{
+  "name": "Emotion Talk",
+  "appid": "__UNI__EMOTIONTALK",
+  "description": "倾诉记录、AI 纪要和专家团建议。",
+  "versionName": "0.1.0",
+  "versionCode": "100",
+  "transformPx": false,
+  "app-plus": {
+    "usingComponents": true,
+    "distribute": {
+      "ios": {},
+      "android": {}
+    }
+  },
+  "mp-weixin": {
+    "appid": "",
+    "setting": {
+      "urlCheck": false
+    },
+    "usingComponents": true
+  },
+  "h5": {
+    "title": "Emotion Talk"
+  }
+}

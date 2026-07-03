@@ -130,6 +130,7 @@ private struct RecordingLiveView: View {
         }
         .padding(20)
         .background(.background, in: RoundedRectangle(cornerRadius: 8))
+        .accessibilityIdentifier("recordingLivePanel")
     }
 }
 

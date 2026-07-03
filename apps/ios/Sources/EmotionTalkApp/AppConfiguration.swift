@@ -3,7 +3,8 @@ import Foundation
 
 enum AppConfiguration {
     static var apiBaseURL: URL? {
-        URL(string: ProcessInfo.processInfo.environment["EMOTION_TALK_API_BASE_URL"] ?? "http://127.0.0.1:8000")
+        // ponytail: dev default for true-device testing; replace with HTTPS config after ICP/domain is ready.
+        URL(string: ProcessInfo.processInfo.environment["EMOTION_TALK_API_BASE_URL"] ?? "http://121.41.92.161/api")
     }
 
     static func makeAPIClient() -> any EmotionTalkAPI {
