@@ -651,6 +651,8 @@ def _timestamp_from_ms(value: Any) -> str:
 def _audio_extension(mime_type: str) -> str:
     return {
         "audio/mpeg": "mp3",
+        "audio/webm": "webm",
+        "audio/ogg": "ogg",
         "audio/mp4": "m4a",
         "audio/x-m4a": "m4a",
         "audio/wav": "wav",

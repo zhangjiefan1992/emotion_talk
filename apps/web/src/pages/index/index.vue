@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 
 import { emotionTalkApi, makeClientId } from "../../api";
-import { formatDuration, liveTranscriptSeed, recentRecords } from "../../sampleData";
+import { formatDuration } from "../../sampleData";
 import type {
   ContextScope,
   ConversationRecord,
@@ -14,8 +14,8 @@ import type {
 
 type ScreenName = "home" | "detail" | "advice";
 type DetailTab = "summary" | "transcript";
-type BackendMode = "checking" | "connected" | "demo";
-type CaptureMode = "none" | "microphone" | "demo";
+type BackendMode = "checking" | "connected" | "offline";
+type CaptureMode = "none" | "microphone";
 type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
 type SpeechRecognitionLike = {
   lang: string;
@@ -49,12 +49,13 @@ const status = ref<RecordingStatus>("idle");
 const elapsed = ref(0);
 const spaceId = ref("");
 const recordingId = ref("");
-const segments = ref<TranscriptSegment[]>(liveTranscriptSeed.slice(0, 3));
-const records = ref<ConversationRecord[]>(recentRecords);
-const selectedRecordId = ref(recentRecords[0]?.localId ?? "");
+const segments = ref<TranscriptSegment[]>([]);
+const records = ref<ConversationRecord[]>([]);
+const selectedRecordId = ref("");
 const summary = ref<SummaryArtifact>();
 const advice = ref<ExpertAdviceJobResponse>();
 const captureMode = ref<CaptureMode>("none");
+const errorText = ref("");
 const contextScope: ContextScope = "current_with_history";
 
 let clockTimer: ReturnType<typeof setInterval> | undefined;
@@ -66,7 +67,7 @@ let speechRecognition: SpeechRecognitionLike | undefined;
 
 const activeRecord = computed(() => records.value.find((record) => record.localId === selectedRecordId.value) ?? records.value[0]);
 const isLive = computed(() => status.value === "recording" || status.value === "processing");
-const detailSegments = computed(() => (isLive.value ? segments.value : activeRecord.value?.segments?.length ? activeRecord.value.segments : liveTranscriptSeed));
+const detailSegments = computed(() => (isLive.value ? segments.value : activeRecord.value?.segments ?? []));
 const detailRecord = computed<ConversationRecord>(() => {
   if (!isLive.value && activeRecord.value) return activeRecord.value;
   return {
@@ -79,15 +80,16 @@ const detailRecord = computed<ConversationRecord>(() => {
     segments: segments.value,
   };
 });
-const visibleSummary = computed(() => summary.value ?? activeRecord.value?.summary ?? makeLocalSummary(detailRecord.value.title, detailSegments.value));
-const visibleAdvice = computed(() => advice.value ?? makeLocalAdvice(contextScope));
+const visibleSummary = computed(() => summary.value ?? activeRecord.value?.summary ?? emptySummary(detailRecord.value.title));
+const visibleAdvice = computed(() => advice.value ?? emptyAdvice(contextScope));
 const visibleAdviceEvents = computed(() =>
   visibleAdvice.value.events.filter((event) => event.payload.content && event.round && event.participant),
 );
-const backendText = computed(() => (backendMode.value === "connected" ? "服务端已连接" : backendMode.value === "demo" ? "本地演示" : "连接中"));
+const backendText = computed(() => (backendMode.value === "connected" ? "服务端已连接" : backendMode.value === "offline" ? "服务端未连接" : "连接中"));
+const spaceSubtitle = computed(() => `${records.value.length} 条真实记录`);
+const portraitStatusText = computed(() => (records.value.length ? "基于真实记录" : "等待录音"));
 const captureText = computed(() => {
   if (captureMode.value === "microphone") return "麦克风录音中";
-  if (captureMode.value === "demo") return "演示转写中";
   return backendText.value;
 });
 
@@ -96,7 +98,7 @@ onMounted(async () => {
     await emotionTalkApi.health();
     backendMode.value = "connected";
   } catch {
-    backendMode.value = "demo";
+    backendMode.value = "offline";
   }
 });
 
@@ -133,20 +135,12 @@ function addSegment(text: string) {
   ];
 }
 
-function startSimulatedTranscript() {
-  captureMode.value = "demo";
-  let cursor = 0;
-  transcriptTimer = setInterval(() => {
-    if (cursor >= liveTranscriptSeed.length) return;
-    segments.value = [...segments.value, liveTranscriptSeed[cursor]];
-    cursor += 1;
-  }, 1400);
-}
-
 async function startBrowserCapture() {
-  if (typeof window === "undefined" || typeof navigator === "undefined") return false;
-  const forceMock = new URLSearchParams(window.location.search).get("mockAudio") === "1";
-  if (forceMock || !navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") return false;
+  if (typeof window === "undefined" || typeof navigator === "undefined") throw new Error("当前环境不支持浏览器录音。");
+  if (!navigator.mediaDevices?.getUserMedia) {
+    throw new Error("当前浏览器没有开放麦克风录音能力。通常需要 HTTPS、localhost/127.0.0.1，或浏览器把当前地址视为安全来源。");
+  }
+  if (typeof MediaRecorder === "undefined") throw new Error("当前浏览器不支持 MediaRecorder 录音。");
 
   mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
   recordedChunks = [];
@@ -158,7 +152,6 @@ async function startBrowserCapture() {
   mediaRecorder.start(1000);
   captureMode.value = "microphone";
   startSpeechRecognition();
-  return true;
 }
 
 function selectAudioMimeType() {
@@ -245,63 +238,36 @@ function stopBrowserCapture(): Promise<Blob | undefined> {
   });
 }
 
-function makeLocalSummary(title: string, sourceSegments: TranscriptSegment[]): SummaryArtifact {
+function emptySummary(title: string): SummaryArtifact {
   return {
-    summaryJobId: "local-summary",
-    recordingId: "local-recording",
-    status: "completed",
+    status: "idle",
     title,
-    overview: "这次对话的核心不是马上解决整个人生方向，而是把迷茫、比较感和下一步行动拆开。",
-    keyPoints: sourceSegments.slice(0, 4).map((segment) => segment.text),
-    chapters: [
-      { title: "迷茫的核心", startTimestamp: "00:00", summary: "围绕当前状态是否是真实想要的生活展开。" },
-      { title: "对选择的担心", startTimestamp: "00:42", summary: "担心别人往前走，自己却不知道下一步。" },
-      { title: "先拆开问题", startTimestamp: "01:10", summary: "将人生问题降到一个可验证的小动作。" },
-    ],
+    overview: "录音完成后会在这里生成 AI 纪要。",
+    keyPoints: [],
+    chapters: [],
   };
 }
 
-function makeLocalAdvice(scope: ContextScope): ExpertAdviceJobResponse {
+function emptyAdvice(scope: ContextScope): ExpertAdviceJobResponse {
   return {
-    jobId: "local-job",
+    jobId: "pending-job",
     sourceType: "recording",
-    sourceId: "local-recording",
+    sourceId: "pending-recording",
     template: "expert_team_v1",
-    status: "completed",
+    status: "pending",
     contextUsage: {
       scope,
       primary: "current_recording",
-      historyCount: scope === "current_with_history" ? 3 : 0,
+      historyCount: 0,
       historySources: [],
-      profileIncluded: scope === "current_with_history",
+      profileIncluded: false,
     },
-    events: [
-      ["life_coach", 1, "核心不是选哪条路，而是先看她希望哪种生活方式继续出现。"],
-      ["counselor", 1, "迷茫和比较感是真实压力信号，但只能作为线索，不能下判断。"],
-      ["reality_strategist", 1, "现在不适合做大计划，先把担心拆成事实和想象两类。"],
-      ["counselor", 2, "提醒不要过早谈价值排序，她现在可能更需要情绪被安放。"],
-      ["reality_strategist", 2, "最终行动只保留一个：写下三个担心失去的东西。"],
-    ].map(([participant, round, content], index) => ({
-      eventId: `local-${index}`,
-      jobId: "local-job",
-      seq: index + 1,
-      type: "expert_message_added",
-      visibility: "user_visible",
-      participant: participant as string,
-      round: round as number,
-      payload: { title: `第 ${round} 轮`, content: content as string },
-    })),
+    events: [],
     artifact: {
-      overview: "本次不是缺答案，而是需要先把焦虑、价值和现实约束分开。",
-      processSummary: [
-        { round: 1, title: "第一轮讨论", summary: "三位专家分别初判。" },
-        { round: 2, title: "第二轮讨论", summary: "互相质疑和压缩风险。" },
-      ],
-      suggestions: [
-        { title: "先暂停重大决定 24 小时", body: "不要在情绪高点做长期选择，先把担心拆开。", confidence: "medium", evidence: ["用户表达了害怕选错。"] },
-        { title: "把担心写成事实和想象两列", body: "下一次倾诉可以继续聊“我真正想保护什么”。", confidence: "medium", evidence: ["对话中出现了对小动作的接受。"] },
-      ],
-      keyUncertainties: ["核心压力来自职业变化还是身份变化仍需确认。"],
+      overview: "完成一次真实录音和 AI 纪要后，专家团会在这里生成多轮讨论和裁判结论。",
+      processSummary: [],
+      suggestions: [],
+      keyUncertainties: [],
       safetyBoundary: "建议仅供参考，最终决定权在你手中。",
     },
   };
@@ -315,7 +281,8 @@ async function ensureSpace() {
 }
 
 async function startRecording() {
-  status.value = "recording";
+  errorText.value = "";
+  status.value = "starting";
   elapsed.value = 0;
   segments.value = [];
   summary.value = undefined;
@@ -325,21 +292,20 @@ async function startRecording() {
   captureMode.value = "none";
 
   try {
+    if (backendMode.value !== "connected") throw new Error("服务端未连接，不能开始真实录音。");
     if (backendMode.value === "connected") {
       const currentSpaceId = await ensureSpace();
       const recording = await emotionTalkApi.createRecording(currentSpaceId, nowTitle());
       recordingId.value = recording.recordingId;
       await emotionTalkApi.createAsrSession(currentSpaceId, recording.recordingId);
     }
+    await startBrowserCapture();
+    status.value = "recording";
+    clockTimer = setInterval(() => (elapsed.value += 1), 1000);
   } catch {
+    status.value = "failed";
+    errorText.value = "真实录音启动失败：当前浏览器没有开放麦克风能力，或用户未授权麦克风。";
     recordingId.value = "";
-  }
-
-  clockTimer = setInterval(() => (elapsed.value += 1), 1000);
-  try {
-    if (!(await startBrowserCapture())) startSimulatedTranscript();
-  } catch {
-    startSimulatedTranscript();
   }
 }
 
@@ -349,28 +315,25 @@ async function finishRecording() {
   stopTimers();
   const audioBlob = await stopBrowserCapture();
   const title = "刚刚的倾诉记录";
-  const durationText = formatDuration(Math.max(elapsed.value, 136));
+  const durationText = formatDuration(elapsed.value);
   let finalSegments = segments.value;
-  let finalSummary = makeLocalSummary(title, finalSegments);
+  let finalSummary: SummaryArtifact | undefined;
 
   try {
-    if (recordingId.value && backendMode.value === "connected") {
-      if (audioBlob) {
-        await emotionTalkApi.createAudioUploadAuthorization(recordingId.value, audioBlob.type || "audio/webm", audioBlob.size);
-        if (!finalSegments.length) {
-          const audioTranscript = await emotionTalkApi.transcribeAudio(recordingId.value, audioBlob, title, durationText);
-          finalSegments = audioTranscript.transcript?.segments ?? [];
-        }
-      }
-      if (!finalSegments.length) finalSegments = liveTranscriptSeed;
-      await emotionTalkApi.submitTranscript(recordingId.value, title, durationText, finalSegments);
-      finalSummary = await emotionTalkApi.createSummaryJob(recordingId.value);
-    }
-  } catch {
-    if (!finalSegments.length) finalSegments = liveTranscriptSeed;
-    finalSummary = makeLocalSummary(title, finalSegments);
+    if (!recordingId.value || backendMode.value !== "connected") throw new Error("服务端未连接。");
+    if (!audioBlob) throw new Error("没有拿到真实录音文件。");
+    await emotionTalkApi.createAudioUploadAuthorization(recordingId.value, audioBlob.type || "audio/webm", audioBlob.size);
+    const audioTranscript = await emotionTalkApi.transcribeAudio(recordingId.value, audioBlob, title, durationText);
+    finalSegments = audioTranscript.transcript?.segments ?? [];
+    if (!finalSegments.length) throw new Error("百炼没有返回转写文本。");
+    finalSummary = await emotionTalkApi.createSummaryJob(recordingId.value);
+  } catch (error) {
+    status.value = "failed";
+    errorText.value = error instanceof Error ? error.message : "真实录音转写失败。";
+    captureMode.value = "none";
+    detailTab.value = "transcript";
+    return;
   }
-  if (!finalSegments.length) finalSegments = liveTranscriptSeed;
 
   const localId = recordingId.value || makeClientId("local_recording");
   summary.value = finalSummary;
@@ -388,15 +351,16 @@ function openRecord(record: ConversationRecord) {
 }
 
 async function openAdvice() {
-  screen.value = "advice";
+  errorText.value = "";
   try {
     const record = activeRecord.value;
+    if (!record?.recordingId || backendMode.value !== "connected") throw new Error("请先完成一次真实录音和纪要。");
+    screen.value = "advice";
     advice.value =
-      record?.recordingId && backendMode.value === "connected"
-        ? await emotionTalkApi.createExpertAdviceJob(record.recordingId, contextScope)
-        : makeLocalAdvice(contextScope);
-  } catch {
-    advice.value = makeLocalAdvice(contextScope);
+      await emotionTalkApi.createExpertAdviceJob(record.recordingId, contextScope);
+  } catch (error) {
+    screen.value = "detail";
+    errorText.value = error instanceof Error ? error.message : "专家团建议生成失败。";
   }
 }
 </script>
@@ -415,7 +379,7 @@ async function openAdvice() {
         <view class="topbar">
           <view class="title-area">
             <text class="space-title">家的倾诉空间</text>
-            <text class="space-subtitle">2 位成员 18 条记录</text>
+            <text class="space-subtitle">{{ spaceSubtitle }}</text>
           </view>
           <button class="icon-button">⌕</button>
           <button class="icon-button">···</button>
@@ -425,20 +389,22 @@ async function openAdvice() {
           <view class="portrait-head">
             <view>
               <text class="portrait-title">空间画像</text>
-              <text class="portrait-subtitle">系统目前的理解，可查看和修正</text>
+              <text class="portrait-subtitle">只基于真实转写和纪要生成</text>
             </view>
-            <text class="small-pill">更新于今天</text>
+            <text class="small-pill">{{ portraitStatusText }}</text>
           </view>
-          <view class="portrait-grid">
-            <view><text class="metric">3</text><text>反复主题</text></view>
-            <view><text class="metric">焦虑</text><text>常见情绪</text></view>
-            <view><text class="metric">选择压力</text><text>本周高频</text></view>
-            <view><text class="metric">陪伴</text><text>支持偏好</text></view>
+          <view v-if="records.length" class="portrait-grid">
+            <view><text class="metric">{{ records.length }}</text><text>真实记录</text></view>
+            <view><text class="metric">已生成</text><text>AI 纪要</text></view>
+            <view><text class="metric">可追溯</text><text>转写原文</text></view>
+            <view><text class="metric">待触发</text><text>专家团</text></view>
           </view>
+          <view v-else class="empty-line">完成第一次真实录音后，空间画像会从转写和纪要中生成。</view>
         </view>
         <view class="tabs"><text class="active-tab">最近</text><text>我的</text><text>共享</text><text>收藏</text></view>
         <view class="list-head"><text class="list-title">最近记录</text><button class="filter-button">筛选</button></view>
         <view class="record-list">
+          <view v-if="!records.length" class="empty-line">还没有真实记录。点击右下角麦克风开始第一次倾诉。</view>
           <button v-for="record in records" :key="record.localId" class="record-row" @tap="openRecord(record)">
             <view class="doc-icon"><text></text><text></text><text></text><text></text></view>
             <view class="record-main">
@@ -469,6 +435,7 @@ async function openAdvice() {
         <text class="title">{{ detailRecord.title }}</text>
         <text class="subtle">{{ detailRecord.createdAt }}</text>
       </view>
+      <view v-if="errorText" class="error-card">{{ errorText }}</view>
       <view v-if="status === 'recording' || status === 'processing'" class="live-card">
         <view class="live-top"><text>{{ status === "processing" ? "生成纪要中" : captureText }}</text><text>{{ formatDuration(elapsed) }}</text></view>
         <button class="finish-button" :disabled="status === 'processing'" @tap="finishRecording">结束并生成纪要</button>
@@ -1064,6 +1031,17 @@ async function openAdvice() {
 .live-card {
   padding: 18px;
   margin: 0 22px;
+}
+
+.error-card {
+  margin: 0 22px 14px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  color: #991b1b;
+  background: #fee2e2;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
 }
 
 .finish-button,

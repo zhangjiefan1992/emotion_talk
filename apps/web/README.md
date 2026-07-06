@@ -5,8 +5,8 @@
 ## 能力范围
 
 - 首页开始对话。
-- 浏览器能力允许时尝试麦克风录音。
-- 不满足安全上下文或测试模式时，自动降级为转写模拟。
+- 浏览器暴露 `navigator.mediaDevices.getUserMedia` 时尝试真实麦克风录音。
+- 不满足真实录音条件时明确报错，不再降级为模拟数据。
 - 实时展示转写片段。
 - 结束后调用服务端生成 AI 纪要。
 - 用户点击后调用专家团建议。
@@ -37,12 +37,6 @@ npm run dev
 http://localhost:5173/
 ```
 
-自动化验证或不想弹麦克风权限时：
-
-```text
-http://localhost:5173/?mockAudio=1
-```
-
 ## 手机访问
 
 Vite 会输出类似这样的局域网地址：
@@ -51,7 +45,7 @@ Vite 会输出类似这样的局域网地址：
 http://<你的 Mac 局域网 IP>:5173/
 ```
 
-iPhone 和 Mac 在同一 Wi-Fi 下时，可以直接在 Safari 打开。注意：iPhone Safari 的麦克风真录音通常要求 HTTPS 安全上下文，本地 HTTP 局域网地址会自动降级为转写模拟。要验证真实麦克风录音，可以后续使用 Cloudflare Tunnel、ngrok、Tailscale Serve 或正式 HTTPS 域名。
+iPhone 和 Mac 在同一 Wi-Fi 下时，可以直接在 Safari 打开。注意：手机浏览器是否允许 HTTP 地址录音，取决于它是否把当前地址视为安全来源。`localhost` / `127.0.0.1` 往往可用，公网 HTTP IP 通常不可用；局域网 IP 在不同浏览器和版本上可能不一致。H5 会以真实能力检测为准，能拿到 `getUserMedia` 就尝试录音，拿不到就报错。
 
 ## 构建
 
@@ -92,7 +86,7 @@ VITE_API_BASE_URL=https://your-api.example.com npm run build
 
 ## 当前限制
 
-- H5 的实时转写仍是模拟层，未来替换为百炼移动端 SDK 或 Web 端可用的 ASR 方案。
-- 浏览器录音只在安全上下文中可用，iPhone 局域网 HTTP 会降级。
+- H5 的实时转写依赖浏览器 `SpeechRecognition` 能力；不支持时，结束后用录音文件请求服务端转写。
+- 浏览器录音以 `getUserMedia` 能力检测为准；公网 HTTP IP 通常拿不到该能力。
 - 当前服务端默认使用 SQLite 持久化，Docker 部署时保存在 `/data/emotion_talk.sqlite3` volume。
 - 音频上传目前只打到服务端授权 stub，还没有真实 OSS PUT。

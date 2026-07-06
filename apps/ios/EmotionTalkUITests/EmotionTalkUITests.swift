@@ -20,9 +20,17 @@ final class EmotionTalkUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchEnvironment["EMOTION_TALK_API_BASE_URL"] = testAPIBaseURL
         app.launch()
+        addUIInterruptionMonitor(withDescription: "Microphone Permission") { alert in
+            for title in ["允许", "Allow"] where alert.buttons[title].exists {
+                alert.buttons[title].tap()
+                return true
+            }
+            return false
+        }
 
         XCTAssertTrue(app.buttons["startConversationButton"].waitForExistence(timeout: 8))
         app.buttons["startConversationButton"].tap()
+        app.tap()
 
         XCTAssertTrue(app.staticTexts["录音中"].waitForExistence(timeout: 12), app.debugDescription)
         Thread.sleep(forTimeInterval: 12)

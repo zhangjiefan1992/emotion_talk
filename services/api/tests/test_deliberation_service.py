@@ -13,7 +13,7 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from emotion_talk_api.app import create_app
+from emotion_talk_api.app import _audio_extension, create_app
 from emotion_talk_api.deliberation import DeliberationService
 from emotion_talk_api.models import HistoricalContextItem
 from emotion_talk_api.models import TranscriptSegment
@@ -324,6 +324,10 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(data["status"], "transcribed")
         self.assertEqual(data["transcript"]["segmentCount"], 1)
         self.assertEqual(data["audioObject"]["byteSize"], 4)
+
+    def test_browser_audio_mime_types_keep_real_extensions(self):
+        self.assertEqual(_audio_extension("audio/webm"), "webm")
+        self.assertEqual(_audio_extension("audio/ogg"), "ogg")
 
 
 class ReportTest(unittest.TestCase):
