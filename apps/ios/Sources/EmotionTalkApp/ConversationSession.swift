@@ -35,11 +35,10 @@ final class ConversationSession {
     private let recorder = LiveSpeechRecorder()
     private var clockTask: Task<Void, Never>?
 
-    func start(api: any EmotionTalkAPI, options: ConversationStartOptions = .liveMicrophone) async {
+    func start(api: any EmotionTalkAPI, space: SpaceResponse, options: ConversationStartOptions = .liveMicrophone) async {
         phase = .starting
         errorMessage = nil
         do {
-            let space = try await api.createSpace(name: "默认倾诉空间")
             let recording = try await api.createRecording(
                 RecordingCreateRequest(
                     spaceId: space.spaceId,

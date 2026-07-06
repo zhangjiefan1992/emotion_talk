@@ -9,10 +9,26 @@ public enum ContextScope: String, Codable, CaseIterable, Identifiable, Sendable 
 
 public struct SpaceResponse: Codable, Equatable, Identifiable, Sendable {
     public let spaceId: String
+    public let ownerId: String?
     public let name: String
+    public let isCurrent: Bool?
     public let createdAt: String
 
     public var id: String { spaceId }
+
+    public init(spaceId: String, ownerId: String? = nil, name: String, isCurrent: Bool? = nil, createdAt: String) {
+        self.spaceId = spaceId
+        self.ownerId = ownerId
+        self.name = name
+        self.isCurrent = isCurrent
+        self.createdAt = createdAt
+    }
+}
+
+public struct SpacesResponse: Codable, Equatable, Sendable {
+    public let ownerId: String
+    public let currentSpaceId: String
+    public let spaces: [SpaceResponse]
 }
 
 public struct RecordingCreateRequest: Codable, Equatable, Sendable {

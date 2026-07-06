@@ -1,7 +1,7 @@
 # Real LLM Summary and Expert Team Task List
 
 Date: 2026-07-06
-Status: backend_remote_passed_client_manual_pending
+Status: h5_remote_passed_ios_build_passed_client_manual_pending
 
 ## Goal
 
@@ -17,6 +17,9 @@ Status: backend_remote_passed_client_manual_pending
 
 - `GET /health`: 服务健康检查。
 - `POST /spaces`: 创建倾诉空间。
+- `GET /users/{owner_id}/spaces`: 获取用户空间列表，并自动确保默认空间。
+- `POST /users/{owner_id}/current-space`: 切换当前空间。
+- `GET /spaces/{space_id}/recordings`: 获取当前空间下的记录列表。
 - `POST /recordings`: 创建录音记录。
 - `POST /recordings/{recording_id}/transcript`: iOS 提交实时转写最终文本。
 - `POST /recordings/{recording_id}/audio-transcriptions`: 服务端可用百炼对音频做补偿转写。
@@ -224,3 +227,32 @@ cd apps/web && npm run build
 Needs human:
 
 - H5 麦克风权限仍需要用户在浏览器里授权。
+
+### Task 8: iOS 空间管理与当前空间录音对齐
+
+Status: local_build_passed_manual_pending
+
+Files:
+
+- Modify: `apps/ios/Sources/EmotionTalkCore/EmotionTalkModels.swift`
+- Modify: `apps/ios/Sources/EmotionTalkCore/EmotionTalkAPI.swift`
+- Modify: `apps/ios/Sources/EmotionTalkCore/PreviewEmotionTalkAPI.swift`
+- Modify: `apps/ios/Sources/EmotionTalkApp/AppView.swift`
+- Modify: `apps/ios/Sources/EmotionTalkApp/ConversationHomeView.swift`
+- Modify: `apps/ios/Sources/EmotionTalkApp/ConversationSession.swift`
+- Modify: `apps/ios/Sources/EmotionTalkAPISmoke/main.swift`
+
+Done when:
+
+- iOS 不再在每次开始录音时创建默认空间。
+- iOS 录音、记录列表、空间切换都使用同一个当前空间。
+- iOS 有 `空间 / 记录 / 主题 / 我的` 四个入口，与 H5 的核心语义一致。
+- `我的` 里可以查看空间、创建空间、切换当前空间。
+- iOS build 通过。
+
+Verify:
+
+```bash
+cd /Users/jeff/Documents/emotion_talk/apps/ios
+xcodebuild -scheme EmotionTalk -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
+```

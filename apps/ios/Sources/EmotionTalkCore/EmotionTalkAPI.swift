@@ -1,7 +1,10 @@
 import Foundation
 
 public protocol EmotionTalkAPI {
-    func createSpace(name: String) async throws -> SpaceResponse
+    func listSpaces(ownerId: String) async throws -> SpacesResponse
+    func createSpace(name: String, ownerId: String) async throws -> SpaceResponse
+    func setCurrentSpace(ownerId: String, spaceId: String) async throws -> SpacesResponse
+    func listRecordings(spaceId: String) async throws -> [RecordingResponse]
     func createRecording(_ request: RecordingCreateRequest) async throws -> RecordingResponse
     func createASRSession(_ request: ASRSessionRequest) async throws -> ASRSessionResponse
     func createAudioUploadAuthorization(recordingId: String, request: AudioUploadAuthorizationRequest) async throws -> AudioUploadAuthorizationResponse
@@ -33,8 +36,20 @@ public struct EmotionTalkHTTPClient: EmotionTalkAPI {
         self.decoder = JSONDecoder()
     }
 
-    public func createSpace(name: String) async throws -> SpaceResponse {
-        try await send(path: "/spaces", method: "POST", body: ["name": name])
+    public func listSpaces(ownerId: String) async throws -> SpacesResponse {
+        try await send(path: "/users/\(ownerId)/spaces", method: "GET", body: Optional<EmptyRequest>.none)
+    }
+
+    public func createSpace(name: String, ownerId: String) async throws -> SpaceResponse {
+        try await send(path: "/spaces", method: "POST", body: ["name": name, "ownerId": ownerId])
+    }
+
+    public func setCurrentSpace(ownerId: String, spaceId: String) async throws -> SpacesResponse {
+        try await send(path: "/users/\(ownerId)/current-space", method: "POST", body: ["spaceId": spaceId])
+    }
+
+    public func listRecordings(spaceId: String) async throws -> [RecordingResponse] {
+        try await send(path: "/spaces/\(spaceId)/recordings", method: "GET", body: Optional<EmptyRequest>.none)
     }
 
     public func createRecording(_ request: RecordingCreateRequest) async throws -> RecordingResponse {

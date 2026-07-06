@@ -23,7 +23,7 @@ Command:
 Result:
 
 ```text
-Ran 14 tests in 0.142s
+Ran 16 tests in 0.152s
 OK
 ```
 
@@ -156,3 +156,63 @@ click 记录: 显示 最近记录
 click 主题: 显示 还没有主题
 console errors: []
 ```
+
+## 2026-07-06 iOS Space Alignment Addendum
+
+### iOS Build
+
+Command:
+
+```bash
+cd apps/ios
+xcodebuild -scheme EmotionTalk -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
+```
+
+Result:
+
+```text
+** BUILD SUCCEEDED **
+```
+
+### Swift API Smoke Compile
+
+Command:
+
+```bash
+cd apps/ios
+swift build --product EmotionTalkAPISmoke
+```
+
+Result:
+
+```text
+Build of product 'EmotionTalkAPISmoke' complete!
+```
+
+### H5 Bottom Tab Click Verification
+
+Observed via Codex Chrome Extension against:
+
+```text
+http://121.41.92.161/
+```
+
+Evidence:
+
+```text
+tabbar buttons: 4
+click 我的: active=我的, visible=空间管理
+click 记录: active=记录, visible=最近记录
+click 主题: active=主题, visible=还没有主题
+click 空间: active=空间, visible=空间画像
+console errors: []
+```
+
+### Product Boundary Confirmed
+
+- 每个用户会自动拥有一个默认空间。
+- 用户可在 `我的` 管理空间、创建空间、切换当前空间。
+- 当前不支持删除空间。
+- 同一用户最多 5 个空间。
+- 同一用户下空间不可重名。
+- iOS 开始录音时使用当前空间，不再每次创建默认空间。

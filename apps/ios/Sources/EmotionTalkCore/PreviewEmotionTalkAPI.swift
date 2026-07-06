@@ -3,8 +3,32 @@ import Foundation
 public struct PreviewEmotionTalkAPIClient: EmotionTalkAPI {
     public init() {}
 
-    public func createSpace(name: String) async throws -> SpaceResponse {
-        SpaceResponse(spaceId: "space_preview", name: name, createdAt: "2026-06-24T10:00:00Z")
+    public func listSpaces(ownerId: String) async throws -> SpacesResponse {
+        SpacesResponse(
+            ownerId: ownerId,
+            currentSpaceId: "space_preview",
+            spaces: [
+                SpaceResponse(spaceId: "space_preview", ownerId: ownerId, name: "家的倾诉空间", isCurrent: true, createdAt: "2026-06-24T10:00:00Z")
+            ]
+        )
+    }
+
+    public func createSpace(name: String, ownerId: String) async throws -> SpaceResponse {
+        SpaceResponse(spaceId: "space_preview_new", ownerId: ownerId, name: name, isCurrent: false, createdAt: "2026-06-24T10:00:00Z")
+    }
+
+    public func setCurrentSpace(ownerId: String, spaceId: String) async throws -> SpacesResponse {
+        SpacesResponse(
+            ownerId: ownerId,
+            currentSpaceId: spaceId,
+            spaces: [
+                SpaceResponse(spaceId: spaceId, ownerId: ownerId, name: "家的倾诉空间", isCurrent: true, createdAt: "2026-06-24T10:00:00Z")
+            ]
+        )
+    }
+
+    public func listRecordings(spaceId: String) async throws -> [RecordingResponse] {
+        []
     }
 
     public func createRecording(_ request: RecordingCreateRequest) async throws -> RecordingResponse {

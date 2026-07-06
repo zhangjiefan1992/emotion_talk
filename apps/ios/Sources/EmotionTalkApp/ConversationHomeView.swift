@@ -3,6 +3,7 @@ import SwiftUI
 
 struct ConversationHomeView: View {
     @Environment(\.emotionTalkAPI) private var api
+    let spaceStore: SpaceStore
     @State private var session = ConversationSession()
 
     var body: some View {
@@ -10,8 +11,18 @@ struct ConversationHomeView: View {
             VStack(spacing: 18) {
                 switch session.phase {
                 case .idle:
-                    IdleConversationView {
-                        Task { await session.start(api: api, options: AppConfiguration.startOptions) }
+                    if let currentSpace = spaceStore.currentSpace {
+                        IdleConversationView(spaceName: currentSpace.name) {
+                            Task {
+                                await session.start(api: api, space: currentSpace, options: AppConfiguration.startOptions)
+                            }
+                        }
+                    } else if let error = spaceStore.errorMessage {
+                        FailurePanel(message: "空间加载失败：\(error)") {
+                            Task { await spaceStore.load(api: api) }
+                        }
+                    } else {
+                        ProgressPanel(title: "加载空间", subtitle: "正在准备当前倾诉空间")
                     }
                 case .starting:
                     ProgressPanel(title: "创建对话", subtitle: "正在准备录音空间")
@@ -20,7 +31,12 @@ struct ConversationHomeView: View {
                         elapsedText: session.elapsedText,
                         statusText: session.recorderStatus,
                         segments: session.liveSegments,
-                        onFinish: { Task { await session.finish(api: api) } }
+                        onFinish: {
+                            Task {
+                                await session.finish(api: api)
+                                try? await spaceStore.loadRecords(api: api)
+                            }
+                        }
                     )
                 case .processing:
                     ProgressPanel(title: "生成纪要", subtitle: "正在整理转写和摘要")
@@ -51,6 +67,7 @@ struct ConversationHomeView: View {
 }
 
 private struct IdleConversationView: View {
+    let spaceName: String
     let onStart: () -> Void
 
     var body: some View {
@@ -62,6 +79,21 @@ private struct IdleConversationView: View {
                     .font(.body)
                     .foregroundStyle(.secondary)
             }
+
+            HStack(spacing: 10) {
+                Image(systemName: "house")
+                    .foregroundStyle(.blue)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("当前空间")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(spaceName)
+                        .font(.subheadline.weight(.semibold))
+                }
+                Spacer()
+            }
+            .padding(14)
+            .background(Color.appSecondaryGroupedBackground, in: RoundedRectangle(cornerRadius: 8))
 
             Button(action: onStart) {
                 Label("开始", systemImage: "mic.fill")

@@ -10,7 +10,11 @@ struct EmotionTalkAPISmoke {
         }
 
         let client = EmotionTalkHTTPClient(baseURL: baseURL)
-        let space = try await client.createSpace(name: "Swift 联调空间")
+        let ownerId = "swift_smoke_\(Int(Date.now.timeIntervalSince1970))"
+        let spaces = try await client.listSpaces(ownerId: ownerId)
+        guard let space = spaces.spaces.first(where: { $0.spaceId == spaces.currentSpaceId }) ?? spaces.spaces.first else {
+            throw SmokeError.unexpectedResponse
+        }
         let recording = try await client.createRecording(
             RecordingCreateRequest(spaceId: space.spaceId, title: "Swift API smoke")
         )
@@ -50,6 +54,7 @@ struct EmotionTalkAPISmoke {
         let events = try await client.fetchExpertAdviceEvents(jobId: advice.jobId)
         let artifact = try await client.fetchExpertAdviceArtifact(jobId: advice.jobId)
 
+        print("ownerId=\(ownerId)")
         print("spaceId=\(space.spaceId)")
         print("recordingId=\(recording.recordingId)")
         print("asrSessionId=\(asrSession.asrSessionId)")
