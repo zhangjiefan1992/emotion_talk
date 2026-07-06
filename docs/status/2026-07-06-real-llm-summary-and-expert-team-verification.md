@@ -543,3 +543,26 @@ Chrome Extension local H5 flow:
   Completed state showed: "已完成 · 16 条过程", 裁判结论, 过程总结, and event timeline
   Console errors/warnings: none
 ```
+
+## 2026-07-07 H5 Context Scope Alignment
+
+Fix:
+
+- H5 expert tab now defaults to `current_only` instead of always sending `current_with_history`.
+- H5 expert tab exposes the same `本次 / 结合历史` context choice as the iOS detail page.
+- Switching the context choice clears any already loaded advice so the next generation uses the selected scope.
+
+Verification:
+
+```text
+npm run type-check -> passed
+npm run build:h5 -> DONE Build complete
+.venv/bin/python -m unittest services/api/tests/test_deliberation_service.py -> 21 tests, OK
+xcodebuild -scheme EmotionTalk -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build -> BUILD SUCCEEDED
+Remote deploy -> http://121.41.92.161/api/health {"status":"ok"}
+Chrome Extension remote H5:
+  Opened QA recording detail -> Expert tab
+  Default buttons: 本次=active, 结合历史=inactive
+  Clicked 结合历史 -> 结合历史=active, 本次=inactive
+  Console errors/warnings: none
+```

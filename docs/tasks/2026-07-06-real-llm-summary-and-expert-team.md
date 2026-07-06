@@ -239,6 +239,7 @@ Latest verification:
 - 2026-07-07 远程容器确认 `provider=deepseek`、`heuristic_flag=UNSET`、`deepseek_key=SET`。
 - 2026-07-07 远程真实接口 smoke 通过：`summary.modelTrace.runtime=llm_summary`；专家团 job 从 `running` 逐步增长到 20 个 events，最终 `completed`，包含第 1/2/3 轮与裁判 artifact。
 - 2026-07-07 H5 本地 Chrome Extension 验证专家团 tab：运行中展示任务进度和已生成过程事件，完成后展示裁判结论、过程总结和事件时间轴。
+- 2026-07-07 H5 远程 Chrome Extension 验证专家团上下文选择：详情页专家团 tab 默认 `本次/current_only` 选中，点击 `结合历史/current_with_history` 后 active 状态切换，console 无 error/warn。
 
 Needs human:
 
@@ -257,6 +258,7 @@ Update 2026-07-06:
 - 2026-07-07 远程 H5 底部四 tab 复验通过：`空间 -> 空间画像`、`记录 -> 最近记录`、`主题 -> 还没有主题`、`我的 -> 空间管理`，console 无 error/warn。
 - 2026-07-07 远程 API 使用临时 owner 验证：默认空间自动创建、默认空间重名返回 409、创建 4 个附加空间后第 6 个返回 409、`POST /users/{owner}/current-space` 可切换当前空间。
 - 2026-07-07 远程 API 验证 `00:00` / `00:18` 分钟级时间戳可解析为 2 段，空转写返回 `422 transcript text is empty`，避免空输入触发 AI 脑补。
+- 2026-07-07 H5 专家团上下文选择与 iOS 对齐：默认 `本次`，用户可切换 `结合历史` 后再生成专家团建议。
 
 ### Task 8: iOS 空间管理与当前空间录音对齐
 

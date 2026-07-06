@@ -65,7 +65,7 @@ const captureMode = ref<CaptureMode>("none");
 const errorText = ref("");
 const isCreatingSpace = ref(false);
 const newSpaceName = ref("");
-const contextScope: ContextScope = "current_with_history";
+const contextScope = ref<ContextScope>("current_only");
 
 let clockTimer: ReturnType<typeof setInterval> | undefined;
 let transcriptTimer: ReturnType<typeof setInterval> | undefined;
@@ -378,6 +378,12 @@ function eventText(event: DeliberationEvent) {
   return event.payload.content || event.payload.title || event.payload.message || event.payload.reason || event.payload.status || "";
 }
 
+function setContextScope(next: ContextScope) {
+  if (contextScope.value === next) return;
+  contextScope.value = next;
+  advice.value = undefined;
+}
+
 async function startRecording() {
   errorText.value = "";
   status.value = "starting";
@@ -455,7 +461,7 @@ async function openAdvice() {
     if (!record?.recordingId || backendMode.value !== "connected") throw new Error("请先完成一次真实录音和纪要。");
     screen.value = "detail";
     detailTab.value = "advice";
-    advice.value = await emotionTalkApi.createExpertAdviceJob(record.recordingId, contextScope);
+    advice.value = await emotionTalkApi.createExpertAdviceJob(record.recordingId, contextScope.value);
     advice.value = await pollAdvice(advice.value.jobId);
   } catch (error) {
     screen.value = "detail";
@@ -642,6 +648,10 @@ async function pollAdvice(jobId: string) {
           </view>
         </view>
         <view v-else class="summary-card">
+          <view class="tabs context-tabs">
+            <button :class="{ 'active-tab': contextScope === 'current_only' }" @tap="setContextScope('current_only')">本次</button>
+            <button :class="{ 'active-tab': contextScope === 'current_with_history' }" @tap="setContextScope('current_with_history')">结合历史</button>
+          </view>
           <button v-if="!visibleAdvice" class="primary" @tap="openAdvice">生成专家团建议</button>
           <view v-else>
             <text class="section-label">任务进度</text>
@@ -971,6 +981,10 @@ async function pollAdvice(jobId: string) {
   color: #6b7280;
   font-size: 13px;
   font-weight: 650;
+}
+
+.context-tabs {
+  margin: 0 0 18px;
 }
 
 .portrait-grid {
