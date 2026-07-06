@@ -1,7 +1,7 @@
 # Real LLM Summary and Expert Team Task List
 
 Date: 2026-07-06
-Status: h5_local_remote_passed_ios_build_passed_client_manual_pending
+Status: h5_local_remote_passed_ios_build_passed_remote_synced_client_manual_pending
 
 ## Goal
 
@@ -32,7 +32,7 @@ Status: h5_local_remote_passed_ios_build_passed_client_manual_pending
 
 - iOS 真机完整链路还需要用户再次点击录音、结束、查看 `纪要 / 转写 / 专家团`。
 - H5 录音链路仍受浏览器录音权限和部署协议影响，需要单独验证。
-- 远程服务器当前使用热更新容器完成验证；Docker Hub 超时导致镜像 rebuild 暂未完成。
+- 远程服务器当前使用热更新容器完成验证；Docker Hub 超时导致镜像 rebuild 暂未完成，但运行中的 API 容器已同步最新 `app.py`。
 - 本地 API 必须使用 `PYTHONPATH=services/api/src` 启动；否则会加载虚拟环境里的旧安装包，导致空间接口 404。
 
 ## Tasks
@@ -231,6 +231,7 @@ Latest verification:
 - H5 build: `DONE Build complete`
 - Chrome Extension 验证本地与远程 H5 底部 tab 均可点击。
 - 本地 API 以最新源码重启后，`GET /users/default_user/spaces` 返回 5 个可见空间且当前空间排第一。
+- 远程 API 热更新后，`GET /api/users/default_user/spaces` 从 31 条旧数据收口为 5 个可见空间；新用户默认返回 1 个空间。
 
 Needs human:
 

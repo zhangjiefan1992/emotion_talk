@@ -1,7 +1,7 @@
 # Real LLM Summary and Expert Team Verification
 
 Date: 2026-07-06
-Status: h5_local_remote_passed_ios_build_passed_client_manual_pending
+Status: h5_local_remote_passed_ios_build_passed_remote_synced_client_manual_pending
 
 ## Scope
 
@@ -279,4 +279,47 @@ Note:
 services/api: Ran 17 tests ... OK
 apps/web: DONE Build complete
 apps/ios: ** BUILD SUCCEEDED **
+```
+
+### Remote Sync Verification
+
+Docker Hub metadata lookup still timed out during image rebuild:
+
+```text
+python:3.12-slim: failed to resolve source metadata ... i/o timeout
+```
+
+Fallback used for the current acceptance server:
+
+```text
+docker cp services/api/src/emotion_talk_api/app.py emotion_talk-api-1:/app/src/emotion_talk_api/app.py
+docker restart emotion_talk-api-1
+```
+
+Remote checks after restart:
+
+```text
+GET /api/health -> {"status":"ok"}
+
+GET /api/users/default_user/spaces
+count: 5
+currentFirst: true
+names:
+- 家庭倾诉空间-公网验证
+- 家的倾诉空间
+- iOS smoke
+- curl verbose
+- 默认倾诉空间
+
+GET /api/users/qa_space_<timestamp>/spaces
+count: 1
+name: 家的倾诉空间
+current: true
+```
+
+Remote H5 after sync:
+
+```text
+click 我的 -> 空间管理 / 创建空间 / 当前
+console errors: []
 ```
