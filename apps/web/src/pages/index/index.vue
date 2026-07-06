@@ -97,6 +97,7 @@ const visibleAdviceEvents = computed(() =>
 const backendText = computed(() => (backendMode.value === "connected" ? "服务端已连接" : backendMode.value === "offline" ? "服务端未连接" : "连接中"));
 const spaceSubtitle = computed(() => `${spaces.value.length || 1} 个空间 · ${records.value.length} 条真实记录`);
 const portraitStatusText = computed(() => (records.value.length ? "基于真实记录" : "等待录音"));
+const reachedSpaceLimit = computed(() => spaces.value.length >= 5);
 const captureText = computed(() => {
   if (captureMode.value === "microphone") return "麦克风录音中";
   return backendText.value;
@@ -301,7 +302,6 @@ async function selectSpace(nextSpaceId: string) {
   spaces.value = response.spaces;
   spaceId.value = response.currentSpaceId;
   await loadCurrentSpaceRecords();
-  bottomTab.value = "space";
 }
 
 function beginCreateSpace() {
@@ -309,10 +309,11 @@ function beginCreateSpace() {
     errorText.value = "服务端未连接，不能创建空间。";
     return;
   }
-  if (spaces.value.length >= 5) {
+  if (reachedSpaceLimit.value) {
     errorText.value = "一个用户最多只能创建 5 个空间。";
     return;
   }
+  errorText.value = "";
   bottomTab.value = "mine";
   isCreatingSpace.value = true;
   newSpaceName.value = "";
@@ -326,6 +327,10 @@ function cancelCreateSpace() {
 async function submitNewSpace() {
   const clean = newSpaceName.value.trim();
   if (!clean) return;
+  if (spaces.value.some((space) => space.name.trim().toLocaleLowerCase() === clean.toLocaleLowerCase())) {
+    errorText.value = "同一个用户下的空间不可重名。";
+    return;
+  }
   try {
     await emotionTalkApi.createSpace(clean, ownerId);
     await loadSpaces();
@@ -473,7 +478,12 @@ async function pollAdvice(jobId: string) {
           </view>
         </view>
         <view v-if="bottomTab === 'space' || bottomTab === 'records'">
-          <view class="tabs"><text class="active-tab">最近</text><text>我的</text><text>共享</text><text>收藏</text></view>
+          <view class="tabs home-tabs" data-testid="home-segments">
+            <button :class="{ 'active-tab': bottomTab === 'space' || bottomTab === 'records' }" data-testid="segment-recent" @tap="bottomTab = 'records'">最近</button>
+            <button data-testid="segment-mine" @tap="bottomTab = 'mine'">我的</button>
+            <button class="disabled-tab" disabled>共享</button>
+            <button class="disabled-tab" disabled>收藏</button>
+          </view>
           <view class="list-head"><text class="list-title">最近记录</text><button class="filter-button">筛选</button></view>
           <view class="record-list">
             <view v-if="!records.length" class="empty-line">还没有真实记录。点击右下角麦克风开始第一次倾诉。</view>
@@ -492,40 +502,68 @@ async function pollAdvice(jobId: string) {
           <text class="summary-title">还没有主题</text>
           <text class="paragraph">完成几次真实倾诉后，再从纪要里沉淀反复出现的主题。</text>
         </view>
-        <view v-else class="summary-card home-card">
+        <view v-else class="summary-card home-card" data-testid="space-management-panel">
           <text class="section-label">我的</text>
           <text class="summary-title">空间管理</text>
-          <text class="paragraph">每个用户最多 5 个空间，当前不支持删除。</text>
+          <text class="paragraph">当前空间决定录音、纪要和专家团建议使用的数据范围。每个用户最多 5 个空间，当前不支持删除。</text>
+          <view class="current-space-card">
+            <view>
+              <text class="section-label">当前空间</text>
+              <text class="chapter-title">{{ currentSpace?.name || "家的倾诉空间" }}</text>
+            </view>
+            <text class="small-pill">{{ spaces.length }}/5</text>
+          </view>
           <view class="space-list">
-            <button v-for="space in spaces" :key="space.spaceId" class="space-row" @tap="selectSpace(space.spaceId)">
+            <view
+              v-for="space in spaces"
+              :key="space.spaceId"
+              class="space-row"
+              data-testid="space-row"
+              @tap="selectSpace(space.spaceId)"
+            >
               <view>
                 <text class="chapter-title">{{ space.name }}</text>
                 <text class="record-meta">{{ space.spaceId }}</text>
               </view>
-              <text class="small-pill">{{ space.spaceId === spaceId ? "当前" : "切换" }}</text>
-            </button>
-          </view>
-          <view v-if="isCreatingSpace" class="space-create">
-            <input class="space-input" v-model="newSpaceName" maxlength="20" placeholder="输入空间名称" @confirm="submitNewSpace" />
-            <view class="space-create-actions">
-              <button class="secondary" @tap="cancelCreateSpace">取消</button>
-              <button class="primary compact" @tap="submitNewSpace">保存</button>
+              <text v-if="space.spaceId === spaceId" class="small-pill">当前空间</text>
+              <button
+                v-else
+                class="small-pill action-pill"
+                data-testid="set-current-space-button"
+                @tap.stop="selectSpace(space.spaceId)"
+              >
+                设置当前空间
+              </button>
             </view>
           </view>
-          <button v-else class="primary" :disabled="spaces.length >= 5" @tap="beginCreateSpace">创建空间</button>
+          <view v-if="isCreatingSpace" class="space-create">
+            <input
+              class="space-input"
+              v-model="newSpaceName"
+              data-testid="space-name-input"
+              maxlength="20"
+              placeholder="输入空间名称"
+              @confirm="submitNewSpace"
+            />
+            <view class="space-create-actions">
+              <button class="secondary" @tap="cancelCreateSpace">取消</button>
+              <button class="primary compact" data-testid="save-space-button" @tap="submitNewSpace">保存</button>
+            </view>
+          </view>
+          <button v-else class="primary" data-testid="create-space-button" :disabled="reachedSpaceLimit" @tap="beginCreateSpace">创建空间</button>
         </view>
       </scroll-view>
-      <view class="floating-actions">
-        <button class="float-add" @tap="beginCreateSpace">＋</button>
-        <button class="float-record" @tap="startRecording">
+      <view v-if="bottomTab !== 'mine'" class="floating-actions">
+        <button class="float-add" data-testid="floating-create-space" @tap="beginCreateSpace">＋</button>
+        <button class="float-record" data-testid="floating-record" @tap="startRecording">
           <view class="mic-bars"><text></text><text></text><text></text><text></text></view>
         </button>
       </view>
       <view class="tabbar">
-        <button :class="{ active: bottomTab === 'space' }" @tap="bottomTab = 'space'"><text class="tab-icon">⌂</text><text>空间</text></button>
-        <button :class="{ active: bottomTab === 'records' }" @tap="bottomTab = 'records'"><text class="tab-icon">▱</text><text>记录</text></button>
-        <button :class="{ active: bottomTab === 'topics' }" @tap="bottomTab = 'topics'"><text class="tab-icon">≡</text><text>主题</text></button>
-        <button :class="{ active: bottomTab === 'mine' }" @tap="bottomTab = 'mine'"><text class="tab-icon">☰</text><text>我的</text></button>
+        <button :class="{ active: bottomTab === 'space' }" data-testid="tab-space" @tap="bottomTab = 'space'"><text class="tab-icon">⌂</text><text>空间</text></button>
+        <button :class="{ active: bottomTab === 'records' }" data-testid="tab-records" @tap="bottomTab = 'records'"><text class="tab-icon">▱</text><text>记录</text></button>
+        <button :class="{ active: bottomTab === 'topics' }" data-testid="tab-topics" @tap="bottomTab = 'topics'"><text class="tab-icon">≡</text><text>主题</text></button>
+        <button :class="{ active: bottomTab === 'mine' }" data-testid="tab-mine" @tap="bottomTab = 'mine'"><text class="tab-icon">☰</text><text>我的</text></button>
       </view>
     </view>
 
@@ -913,7 +951,8 @@ async function pollAdvice(jobId: string) {
 }
 
 .tabs text,
-.tabs button {
+.tabs button,
+.tabs uni-button {
   flex: 1;
   height: 37px;
   display: grid;
@@ -926,6 +965,11 @@ async function pollAdvice(jobId: string) {
   font-weight: 900;
   background: #ffffff;
   box-shadow: 0 8px 18px rgba(31, 45, 68, 0.08);
+}
+
+.disabled-tab {
+  color: #a6afbd;
+  background: transparent;
 }
 
 .list-head {
@@ -1095,7 +1139,8 @@ async function pollAdvice(jobId: string) {
   -webkit-backdrop-filter: blur(20px);
 }
 
-.tabbar button {
+.tabbar button,
+.tabbar uni-button {
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -1109,7 +1154,8 @@ async function pollAdvice(jobId: string) {
   font-weight: 650;
 }
 
-.tabbar button.active {
+.tabbar button.active,
+.tabbar uni-button.active {
   background: rgba(232, 238, 247, 0.86);
   color: #111827;
 }
@@ -1201,6 +1247,17 @@ async function pollAdvice(jobId: string) {
 
 .home-card {
   margin-bottom: 18px;
+}
+
+.current-space-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 16px;
+  background: #eef4ff;
 }
 
 .space-list {
