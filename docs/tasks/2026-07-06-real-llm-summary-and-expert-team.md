@@ -233,6 +233,8 @@ Latest verification:
 - 本地 API 以最新源码重启后，`GET /users/default_user/spaces` 返回 5 个可见空间且当前空间排第一。
 - 远程 API 热更新后，`GET /api/users/default_user/spaces` 从 31 条旧数据收口为 5 个可见空间；新用户默认返回 1 个空间。
 - 新增回归测试确认专家团缺 `DEEPSEEK_API_KEY` 时返回 503，且不会创建 `expertAdviceJobIds`。
+- 2026-07-07 远程容器确认 `provider=deepseek`、`heuristic_flag=UNSET`、`deepseek_key=SET`。
+- 2026-07-07 远程真实接口 smoke 通过：`summary.modelTrace.runtime=llm_summary`；专家团 job 从 `running` 逐步增长到 20 个 events，最终 `completed`，包含第 1/2/3 轮与裁判 artifact。
 
 Needs human:
 
