@@ -120,5 +120,39 @@ has_纪要=yes has_转写=yes has_专家团=yes has_running=yes has_api=yes
 ## Remaining Risks
 
 - iOS 真机还需要用户再次人工验收录音、结束、三个 tab 展示。
-- H5 需要再用浏览器验收页面入口和视觉一致性；录音能力取决于浏览器权限和协议环境。
+- H5 页面入口、底部点击、空间管理入口已通过 Chrome 验证；录音能力仍取决于浏览器麦克风权限和协议环境。
 - 远程容器已热更新并通过接口验证，但 Docker Hub 拉取基础镜像超时，正式镜像 rebuild 尚未成功。若后续执行 `docker compose up --force-recreate --build`，需要先完成镜像 rebuild。
+
+## 2026-07-06 H5 Clickability And Space Management Addendum
+
+### Remote Space API Smoke
+
+Observed output:
+
+```text
+health {'status': 'ok'}
+default 200 space_3bc10a2231034634 家的倾诉空间
+duplicate 409
+created 4
+limit 409
+current space_2a86b2329eb447aa ['健康']
+recordings 1 空间切换验收记录
+```
+
+### Remote H5 Click Smoke
+
+Target:
+
+```text
+http://121.41.92.161/
+```
+
+Evidence:
+
+```text
+initial: 家的倾诉空间 / 1 个空间 · 0 条真实记录
+click 我的: 显示 空间管理 / 创建空间 / 当前
+click 记录: 显示 最近记录
+click 主题: 显示 还没有主题
+console errors: []
+```

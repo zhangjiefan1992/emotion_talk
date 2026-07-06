@@ -10,8 +10,16 @@ export type ContextScope = "current_only" | "current_with_history";
 
 export interface SpaceResponse {
   spaceId: string;
+  ownerId?: string;
   name: string;
+  isCurrent?: boolean;
   createdAt: string;
+}
+
+export interface SpacesResponse {
+  ownerId: string;
+  currentSpaceId: string;
+  spaces: SpaceResponse[];
 }
 
 export interface RecordingResponse {

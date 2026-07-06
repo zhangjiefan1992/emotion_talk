@@ -31,6 +31,10 @@ from .providers import LLMProvider, ProviderError, provider_from_env
 from .storage import MemoryStorage, StorageBackend, storage_from_env
 from .transcript import parse_markdown_transcript
 
+DEFAULT_OWNER_ID = "default_user"
+DEFAULT_SPACE_NAME = "家的倾诉空间"
+MAX_SPACES_PER_OWNER = 5
+
 
 def _new_id(prefix: str) -> str:
     return f"{prefix}_{uuid.uuid4().hex[:16]}"
@@ -81,6 +85,11 @@ class MarkdownJobRequest(BaseModel):
 
 class SpaceCreateRequest(BaseModel):
     name: str = "默认倾诉空间"
+    owner_id: str = Field(default=DEFAULT_OWNER_ID, alias="ownerId")
+
+
+class CurrentSpaceRequest(BaseModel):
+    space_id: str = Field(alias="spaceId")
 
 
 class RecordingCreateRequest(BaseModel):
@@ -283,15 +292,46 @@ def create_app(
 
     @app.post("/spaces")
     def create_space(request: SpaceCreateRequest) -> dict[str, Any]:
+        owner_id = _clean_owner_id(request.owner_id)
+        name = _clean_space_name(request.name)
+        _assert_can_create_space(spaces, owner_id=owner_id, name=name)
         space_id = _new_id("space")
+        is_current = not _owner_spaces(spaces, owner_id)
         record = {
             "spaceId": space_id,
-            "name": request.name,
+            "ownerId": owner_id,
+            "name": name,
+            "isCurrent": is_current,
             "createdAt": _now_iso(),
         }
         spaces[space_id] = record
         store.save_space(record)
         return record
+
+    @app.get("/users/{owner_id}/spaces")
+    def list_user_spaces(owner_id: str) -> dict[str, Any]:
+        owner_id = _clean_owner_id(owner_id)
+        current = _ensure_default_space(spaces, owner_id=owner_id, store=store)
+        return {
+            "ownerId": owner_id,
+            "currentSpaceId": current["spaceId"],
+            "spaces": [_space_public(space, owner_id=owner_id) for space in _sorted_owner_spaces(spaces, owner_id)],
+        }
+
+    @app.post("/users/{owner_id}/current-space")
+    def set_current_space(owner_id: str, request: CurrentSpaceRequest) -> dict[str, Any]:
+        owner_id = _clean_owner_id(owner_id)
+        target = spaces.get(request.space_id)
+        if not target or _space_owner(target) != owner_id:
+            raise HTTPException(status_code=404, detail="space not found")
+        for space in _owner_spaces(spaces, owner_id):
+            space["isCurrent"] = space["spaceId"] == request.space_id
+            store.save_space(space)
+        return {
+            "ownerId": owner_id,
+            "currentSpaceId": request.space_id,
+            "spaces": [_space_public(space, owner_id=owner_id) for space in _sorted_owner_spaces(spaces, owner_id)],
+        }
 
     @app.get("/spaces/{space_id}")
     def get_space(space_id: str) -> dict[str, Any]:
@@ -324,6 +364,14 @@ def create_app(
     @app.get("/recordings/{recording_id}")
     def get_recording(recording_id: str) -> dict[str, Any]:
         return _recording_response(_require_recording(recordings, recording_id))
+
+    @app.get("/spaces/{space_id}/recordings")
+    def list_space_recordings(space_id: str) -> list[dict[str, Any]]:
+        if space_id not in spaces:
+            raise HTTPException(status_code=404, detail="space not found")
+        items = [record for record in recordings.values() if record["spaceId"] == space_id]
+        items.sort(key=lambda item: str(item.get("createdAt", "")), reverse=True)
+        return [_recording_response(record) for record in items]
 
     @app.post("/recordings/{recording_id}/transcript")
     def submit_transcript(recording_id: str, request: TranscriptSubmitRequest) -> dict[str, Any]:
@@ -564,6 +612,77 @@ def _run_expert_advice_job(
                 )
             )
             store.save_job(job)
+
+
+def _clean_owner_id(owner_id: str) -> str:
+    return owner_id.strip() or DEFAULT_OWNER_ID
+
+
+def _clean_space_name(name: str) -> str:
+    clean = " ".join(name.split())
+    if not clean:
+        raise HTTPException(status_code=422, detail="space name is required")
+    return clean
+
+
+def _space_owner(space: dict[str, Any]) -> str:
+    return str(space.get("ownerId") or DEFAULT_OWNER_ID)
+
+
+def _owner_spaces(spaces: dict[str, dict[str, Any]], owner_id: str) -> list[dict[str, Any]]:
+    return [space for space in spaces.values() if _space_owner(space) == owner_id]
+
+
+def _sorted_owner_spaces(spaces: dict[str, dict[str, Any]], owner_id: str) -> list[dict[str, Any]]:
+    items = _owner_spaces(spaces, owner_id)
+    items.sort(key=lambda item: str(item.get("createdAt", "")))
+    return items
+
+
+def _space_public(space: dict[str, Any], *, owner_id: str | None = None) -> dict[str, Any]:
+    return {
+        "spaceId": space["spaceId"],
+        "ownerId": owner_id or _space_owner(space),
+        "name": space.get("name", DEFAULT_SPACE_NAME),
+        "isCurrent": bool(space.get("isCurrent")),
+        "createdAt": space.get("createdAt", ""),
+    }
+
+
+def _assert_can_create_space(spaces: dict[str, dict[str, Any]], *, owner_id: str, name: str) -> None:
+    owner_spaces = _owner_spaces(spaces, owner_id)
+    if len(owner_spaces) >= MAX_SPACES_PER_OWNER:
+        raise HTTPException(status_code=409, detail="a user can have at most 5 spaces")
+    normalized = name.casefold()
+    if any(str(space.get("name", "")).casefold() == normalized for space in owner_spaces):
+        raise HTTPException(status_code=409, detail="space name already exists")
+
+
+def _ensure_default_space(
+    spaces: dict[str, dict[str, Any]],
+    *,
+    owner_id: str,
+    store: StorageBackend,
+) -> dict[str, Any]:
+    owner_spaces = _owner_spaces(spaces, owner_id)
+    current = next((space for space in owner_spaces if space.get("isCurrent")), None)
+    if current:
+        return current
+    if owner_spaces:
+        owner_spaces[0]["isCurrent"] = True
+        owner_spaces[0]["ownerId"] = owner_id
+        store.save_space(owner_spaces[0])
+        return owner_spaces[0]
+    space = {
+        "spaceId": _new_id("space"),
+        "ownerId": owner_id,
+        "name": DEFAULT_SPACE_NAME,
+        "isCurrent": True,
+        "createdAt": _now_iso(),
+    }
+    spaces[space["spaceId"]] = space
+    store.save_space(space)
+    return space
 
 
 def _require_recording(recordings: dict[str, dict[str, Any]], recording_id: str) -> dict[str, Any]:

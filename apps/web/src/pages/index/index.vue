@@ -7,13 +7,16 @@ import type {
   ContextScope,
   ConversationRecord,
   ExpertAdviceJobResponse,
+  RecordingResponse,
   RecordingStatus,
+  SpaceResponse,
   SummaryArtifact,
   TranscriptSegment,
 } from "../../types";
 
 type ScreenName = "home" | "detail" | "advice";
 type DetailTab = "summary" | "transcript" | "advice";
+type BottomTab = "space" | "records" | "topics" | "mine";
 type BackendMode = "checking" | "connected" | "offline";
 type CaptureMode = "none" | "microphone";
 type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
@@ -45,9 +48,12 @@ const participantNames: Record<string, string> = {
 const backendMode = ref<BackendMode>("checking");
 const screen = ref<ScreenName>("home");
 const detailTab = ref<DetailTab>("summary");
+const bottomTab = ref<BottomTab>("space");
 const status = ref<RecordingStatus>("idle");
 const elapsed = ref(0);
 const spaceId = ref("");
+const ownerId = getOwnerId();
+const spaces = ref<SpaceResponse[]>([]);
 const recordingId = ref("");
 const segments = ref<TranscriptSegment[]>([]);
 const records = ref<ConversationRecord[]>([]);
@@ -66,6 +72,7 @@ let recordedChunks: Blob[] = [];
 let speechRecognition: SpeechRecognitionLike | undefined;
 
 const activeRecord = computed(() => records.value.find((record) => record.localId === selectedRecordId.value) ?? records.value[0]);
+const currentSpace = computed(() => spaces.value.find((space) => space.spaceId === spaceId.value) ?? spaces.value[0]);
 const isLive = computed(() => status.value === "recording" || status.value === "processing");
 const detailSegments = computed(() => (isLive.value ? segments.value : activeRecord.value?.segments ?? []));
 const detailRecord = computed<ConversationRecord>(() => {
@@ -86,7 +93,7 @@ const visibleAdviceEvents = computed(() =>
   (visibleAdvice.value?.events ?? []).filter((event) => event.payload.content && event.round && event.participant),
 );
 const backendText = computed(() => (backendMode.value === "connected" ? "服务端已连接" : backendMode.value === "offline" ? "服务端未连接" : "连接中"));
-const spaceSubtitle = computed(() => `${records.value.length} 条真实记录`);
+const spaceSubtitle = computed(() => `${spaces.value.length || 1} 个空间 · ${records.value.length} 条真实记录`);
 const portraitStatusText = computed(() => (records.value.length ? "基于真实记录" : "等待录音"));
 const captureText = computed(() => {
   if (captureMode.value === "microphone") return "麦克风录音中";
@@ -97,6 +104,7 @@ onMounted(async () => {
   try {
     await emotionTalkApi.health();
     backendMode.value = "connected";
+    await loadSpaces();
   } catch {
     backendMode.value = "offline";
   }
@@ -110,6 +118,20 @@ onBeforeUnmount(() => {
 
 function nowTitle() {
   return `${new Date().toLocaleDateString("zh-CN", { month: "2-digit", day: "2-digit" })} 晚间倾诉`;
+}
+
+function getOwnerId() {
+  if (typeof window === "undefined") return "default_user";
+  const key = "emotion_talk_owner_id";
+  try {
+    const existing = window.localStorage.getItem(key);
+    if (existing) return existing;
+    const created = makeClientId("h5_user");
+    window.localStorage.setItem(key, created);
+    return created;
+  } catch {
+    return makeClientId("h5_user");
+  }
 }
 
 function stopTimers() {
@@ -248,11 +270,63 @@ function emptySummary(title: string): SummaryArtifact {
   };
 }
 
+function recordFromResponse(record: RecordingResponse): ConversationRecord {
+  return {
+    localId: record.recordingId,
+    recordingId: record.recordingId,
+    title: record.title,
+    createdAt: record.transcript?.createdAtText || new Date(record.createdAt).toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }),
+    durationText: record.transcript?.durationText || "",
+    status: record.summaryArtifact ? "completed" : record.status === "recording" ? "recording" : "completed",
+    segments: record.transcript?.segments ?? [],
+    summary: record.summaryArtifact ?? undefined,
+  };
+}
+
+async function loadCurrentSpaceRecords() {
+  if (!spaceId.value || backendMode.value !== "connected") return;
+  const items = await emotionTalkApi.listRecordings(spaceId.value);
+  records.value = items.map(recordFromResponse);
+  selectedRecordId.value = records.value[0]?.localId ?? "";
+}
+
+async function loadSpaces() {
+  const response = await emotionTalkApi.listSpaces(ownerId);
+  spaces.value = response.spaces;
+  spaceId.value = response.currentSpaceId;
+  await loadCurrentSpaceRecords();
+}
+
 async function ensureSpace() {
   if (spaceId.value) return spaceId.value;
-  const space = await emotionTalkApi.createSpace("家的倾诉空间");
-  spaceId.value = space.spaceId;
-  return space.spaceId;
+  await loadSpaces();
+  return spaceId.value;
+}
+
+async function selectSpace(nextSpaceId: string) {
+  if (nextSpaceId === spaceId.value) return;
+  const response = await emotionTalkApi.setCurrentSpace(ownerId, nextSpaceId);
+  spaces.value = response.spaces;
+  spaceId.value = response.currentSpaceId;
+  await loadCurrentSpaceRecords();
+  bottomTab.value = "space";
+}
+
+async function createSpacePrompt() {
+  if (backendMode.value !== "connected") {
+    errorText.value = "服务端未连接，不能创建空间。";
+    return;
+  }
+  const name = typeof window !== "undefined" ? window.prompt("新空间名称") : "";
+  const clean = name?.trim();
+  if (!clean) return;
+  try {
+    await emotionTalkApi.createSpace(clean, ownerId);
+    await loadSpaces();
+    bottomTab.value = "mine";
+  } catch (error) {
+    errorText.value = error instanceof Error ? error.message : "创建空间失败。";
+  }
 }
 
 async function startRecording() {
@@ -364,54 +438,79 @@ async function pollAdvice(jobId: string) {
       <scroll-view scroll-y class="content">
         <view class="topbar">
           <view class="title-area">
-            <text class="space-title">家的倾诉空间</text>
+            <text class="space-title">{{ currentSpace?.name || "家的倾诉空间" }}</text>
             <text class="space-subtitle">{{ spaceSubtitle }}</text>
           </view>
           <button class="icon-button">⌕</button>
           <button class="icon-button">···</button>
         </view>
         <view class="search"><text class="search-icon">⌕</text><text>搜索记录、原话、主题</text></view>
-        <view class="portrait">
-          <view class="portrait-head">
-            <view>
-              <text class="portrait-title">空间画像</text>
-              <text class="portrait-subtitle">只基于真实转写和纪要生成</text>
+        <view v-if="errorText" class="error-card">{{ errorText }}</view>
+        <view v-if="bottomTab === 'space'">
+          <view class="portrait">
+            <view class="portrait-head">
+              <view>
+                <text class="portrait-title">空间画像</text>
+                <text class="portrait-subtitle">只基于真实转写和纪要生成</text>
+              </view>
+              <text class="small-pill">{{ portraitStatusText }}</text>
             </view>
-            <text class="small-pill">{{ portraitStatusText }}</text>
+            <view v-if="records.length" class="portrait-grid">
+              <view><text class="metric">{{ records.length }}</text><text>真实记录</text></view>
+              <view><text class="metric">已生成</text><text>AI 纪要</text></view>
+              <view><text class="metric">可追溯</text><text>转写原文</text></view>
+              <view><text class="metric">待触发</text><text>专家团</text></view>
+            </view>
+            <view v-else class="empty-line">完成第一次真实录音后，空间画像会从转写和纪要中生成。</view>
           </view>
-          <view v-if="records.length" class="portrait-grid">
-            <view><text class="metric">{{ records.length }}</text><text>真实记录</text></view>
-            <view><text class="metric">已生成</text><text>AI 纪要</text></view>
-            <view><text class="metric">可追溯</text><text>转写原文</text></view>
-            <view><text class="metric">待触发</text><text>专家团</text></view>
-          </view>
-          <view v-else class="empty-line">完成第一次真实录音后，空间画像会从转写和纪要中生成。</view>
         </view>
-        <view class="tabs"><text class="active-tab">最近</text><text>我的</text><text>共享</text><text>收藏</text></view>
-        <view class="list-head"><text class="list-title">最近记录</text><button class="filter-button">筛选</button></view>
-        <view class="record-list">
-          <view v-if="!records.length" class="empty-line">还没有真实记录。点击右下角麦克风开始第一次倾诉。</view>
-          <button v-for="record in records" :key="record.localId" class="record-row" @tap="openRecord(record)">
-            <view class="doc-icon"><text></text><text></text><text></text><text></text></view>
-            <view class="record-main">
-              <text class="record-title">{{ record.title }}</text>
-              <text class="record-meta">{{ record.createdAt }} · {{ record.durationText }} · 已摘要</text>
-            </view>
-            <text class="chevron">···</text>
-          </button>
+        <view v-if="bottomTab === 'space' || bottomTab === 'records'">
+          <view class="tabs"><text class="active-tab">最近</text><text>我的</text><text>共享</text><text>收藏</text></view>
+          <view class="list-head"><text class="list-title">最近记录</text><button class="filter-button">筛选</button></view>
+          <view class="record-list">
+            <view v-if="!records.length" class="empty-line">还没有真实记录。点击右下角麦克风开始第一次倾诉。</view>
+            <button v-for="record in records" :key="record.localId" class="record-row" @tap="openRecord(record)">
+              <view class="doc-icon"><text></text><text></text><text></text><text></text></view>
+              <view class="record-main">
+                <text class="record-title">{{ record.title }}</text>
+                <text class="record-meta">{{ record.createdAt }} · {{ record.durationText || "未记录时长" }} · 已摘要</text>
+              </view>
+              <text class="chevron">···</text>
+            </button>
+          </view>
+        </view>
+        <view v-else-if="bottomTab === 'topics'" class="summary-card home-card">
+          <text class="section-label">主题</text>
+          <text class="summary-title">还没有主题</text>
+          <text class="paragraph">完成几次真实倾诉后，再从纪要里沉淀反复出现的主题。</text>
+        </view>
+        <view v-else class="summary-card home-card">
+          <text class="section-label">我的</text>
+          <text class="summary-title">空间管理</text>
+          <text class="paragraph">每个用户最多 5 个空间，当前不支持删除。</text>
+          <view class="space-list">
+            <button v-for="space in spaces" :key="space.spaceId" class="space-row" @tap="selectSpace(space.spaceId)">
+              <view>
+                <text class="chapter-title">{{ space.name }}</text>
+                <text class="record-meta">{{ space.spaceId }}</text>
+              </view>
+              <text class="small-pill">{{ space.spaceId === spaceId ? "当前" : "切换" }}</text>
+            </button>
+          </view>
+          <button class="primary" :disabled="spaces.length >= 5" @tap="createSpacePrompt">创建空间</button>
         </view>
       </scroll-view>
       <view class="floating-actions">
-        <button class="float-add">＋</button>
+        <button class="float-add" @tap="createSpacePrompt">＋</button>
         <button class="float-record" @tap="startRecording">
           <view class="mic-bars"><text></text><text></text><text></text><text></text></view>
         </button>
       </view>
       <view class="tabbar">
-        <button class="active"><text class="tab-icon">⌂</text><text>空间</text></button>
-        <button><text class="tab-icon">▱</text><text>记录</text></button>
-        <button><text class="tab-icon">≡</text><text>主题</text></button>
-        <button><text class="tab-icon">☰</text><text>我的</text></button>
+        <button :class="{ active: bottomTab === 'space' }" @tap="bottomTab = 'space'"><text class="tab-icon">⌂</text><text>空间</text></button>
+        <button :class="{ active: bottomTab === 'records' }" @tap="bottomTab = 'records'"><text class="tab-icon">▱</text><text>记录</text></button>
+        <button :class="{ active: bottomTab === 'topics' }" @tap="bottomTab = 'topics'"><text class="tab-icon">≡</text><text>主题</text></button>
+        <button :class="{ active: bottomTab === 'mine' }" @tap="bottomTab = 'mine'"><text class="tab-icon">☰</text><text>我的</text></button>
       </view>
     </view>
 
@@ -1060,6 +1159,35 @@ async function pollAdvice(jobId: string) {
   color: white;
   background: #1778ff;
   font-weight: 900;
+}
+
+.primary[disabled] {
+  color: #94a3b8;
+  background: #e5e7eb;
+}
+
+.home-card {
+  margin-bottom: 18px;
+}
+
+.space-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.space-row {
+  width: 100%;
+  min-height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 16px;
+  text-align: left;
+  background: #f3f6fb;
 }
 
 .detail-scroll {

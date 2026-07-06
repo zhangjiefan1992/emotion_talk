@@ -3,6 +3,7 @@ import type {
   ExpertAdviceJobResponse,
   RecordingResponse,
   SpaceResponse,
+  SpacesResponse,
   SummaryArtifact,
   TranscriptSegment,
 } from "./types";
@@ -47,11 +48,26 @@ export const emotionTalkApi = {
     return request<{ status: string }>("/health");
   },
 
-  createSpace(name: string) {
+  listSpaces(ownerId: string) {
+    return request<SpacesResponse>(`/users/${encodeURIComponent(ownerId)}/spaces`);
+  },
+
+  createSpace(name: string, ownerId: string) {
     return request<SpaceResponse>("/spaces", {
       method: "POST",
-      body: { name },
+      body: { name, ownerId },
     });
+  },
+
+  setCurrentSpace(ownerId: string, spaceId: string) {
+    return request<SpacesResponse>(`/users/${encodeURIComponent(ownerId)}/current-space`, {
+      method: "POST",
+      body: { spaceId },
+    });
+  },
+
+  listRecordings(spaceId: string) {
+    return request<RecordingResponse[]>(`/spaces/${spaceId}/recordings`);
   },
 
   createRecording(spaceId: string, title: string) {

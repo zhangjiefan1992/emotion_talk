@@ -190,3 +190,37 @@ Needs human:
 
 - 真机点录音、结束、查看三个 tab。
 - 如果域名/HTTPS 没完成，H5 录音能力以 localhost 或真机 iOS 优先验收。
+
+### Task 7: H5 点击可用与空间管理闭环
+
+Status: remote_passed_recording_permission_manual_pending
+
+Files:
+
+- Modify: `services/api/src/emotion_talk_api/app.py`
+- Modify: `services/api/tests/test_deliberation_service.py`
+- Modify: `apps/web/src/api.ts`
+- Modify: `apps/web/src/types.ts`
+- Modify: `apps/web/src/pages/index/index.vue`
+
+Done when:
+
+- H5 底部 `空间 / 记录 / 主题 / 我的` 可点击并切换当前页面状态。
+- 每个用户默认有一个空间。
+- `我的` 里可以查看空间、创建空间、切换当前空间。
+- 当前不支持删除空间。
+- 同一用户最多 5 个空间。
+- 同一用户下空间不可重名。
+- 切换空间后，首页记录列表显示当前空间的记录。
+
+Verify:
+
+```bash
+cd /Users/jeff/Documents/emotion_talk
+.venv/bin/python -m unittest services/api/tests/test_deliberation_service.py
+cd apps/web && npm run build
+```
+
+Needs human:
+
+- H5 麦克风权限仍需要用户在浏览器里授权。

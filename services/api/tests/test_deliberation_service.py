@@ -292,6 +292,45 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(response.status_code, 503)
         self.assertIn("DEEPSEEK_API_KEY", response.json()["detail"])
 
+    def test_space_management_defaults_limits_names_and_switches_current(self):
+        app = create_app(provider=FakeProvider())
+        client = TestClient(app)
+
+        listed = client.get("/users/default_user/spaces").json()
+        self.assertEqual(listed["spaces"][0]["name"], "家的倾诉空间")
+        self.assertEqual(listed["currentSpaceId"], listed["spaces"][0]["spaceId"])
+
+        duplicate = client.post("/spaces", json={"name": "家的倾诉空间", "ownerId": "default_user"})
+        self.assertEqual(duplicate.status_code, 409)
+
+        created_ids = []
+        for name in ["工作", "家庭", "成长", "健康"]:
+            response = client.post("/spaces", json={"name": name, "ownerId": "default_user"})
+            self.assertEqual(response.status_code, 200)
+            created_ids.append(response.json()["spaceId"])
+        too_many = client.post("/spaces", json={"name": "第六个", "ownerId": "default_user"})
+        self.assertEqual(too_many.status_code, 409)
+
+        switched = client.post("/users/default_user/current-space", json={"spaceId": created_ids[-1]}).json()
+        self.assertEqual(switched["currentSpaceId"], created_ids[-1])
+        current = [space for space in switched["spaces"] if space["isCurrent"]]
+        self.assertEqual([space["spaceId"] for space in current], [created_ids[-1]])
+
+    def test_lists_recordings_by_space(self):
+        app = create_app(provider=FakeProvider())
+        client = TestClient(app)
+
+        one = client.post("/spaces", json={"name": "空间一"}).json()
+        two = client.post("/spaces", json={"name": "空间二"}).json()
+        first = client.post("/recordings", json={"spaceId": one["spaceId"], "title": "一号记录"}).json()
+        client.post("/recordings", json={"spaceId": two["spaceId"], "title": "二号记录"})
+
+        response = client.get(f"/spaces/{one['spaceId']}/recordings")
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual([item["recordingId"] for item in data], [first["recordingId"]])
+
     def test_post_markdown_returns_job_artifact(self):
         app = create_app(provider=FakeProvider())
         client = TestClient(app)
