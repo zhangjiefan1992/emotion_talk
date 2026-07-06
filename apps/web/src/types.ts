@@ -104,6 +104,7 @@ export interface DeliberationEvent {
     title?: string | null;
     content?: string | null;
     status?: string | null;
+    message?: string | null;
   };
   participant?: string | null;
   round?: number | null;

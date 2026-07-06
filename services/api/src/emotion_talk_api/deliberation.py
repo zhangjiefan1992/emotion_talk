@@ -4,7 +4,7 @@ import json
 import re
 import uuid
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Callable
 
 from .models import (
     DeliberationArtifact,
@@ -65,13 +65,15 @@ class DeliberationService:
         context_scope: str = "current_only",
         historical_context: list[HistoricalContextItem] | None = None,
         profile_context: dict[str, Any] | None = None,
+        job_id: str | None = None,
+        on_event: Callable[[DeliberationEvent], None] | None = None,
     ) -> DeliberationJob:
         historical_context = historical_context or []
         profile_context = profile_context or {}
         if context_scope not in {"current_only", "current_with_history"}:
             raise ValueError(f"Unsupported context scope: {context_scope}")
 
-        job_id = f"job_{uuid.uuid4().hex[:16]}"
+        job_id = job_id or f"job_{uuid.uuid4().hex[:16]}"
         seq = 0
         events: list[DeliberationEvent] = []
 
@@ -85,18 +87,19 @@ class DeliberationService:
         ) -> None:
             nonlocal seq
             seq += 1
-            events.append(
-                DeliberationEvent(
-                    event_id=f"evt_{seq:04d}",
-                    job_id=job_id,
-                    seq=seq,
-                    type=event_type,
-                    visibility=visibility,
-                    payload=payload,
-                    participant=participant,
-                    round=round_number,
-                )
+            event = DeliberationEvent(
+                event_id=f"evt_{seq:04d}",
+                job_id=job_id,
+                seq=seq,
+                type=event_type,
+                visibility=visibility,
+                payload=payload,
+                participant=participant,
+                round=round_number,
             )
+            events.append(event)
+            if on_event:
+                on_event(event)
 
         input_snapshot = self._build_input_snapshot(
             transcript,

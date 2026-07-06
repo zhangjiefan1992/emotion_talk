@@ -6,8 +6,18 @@ struct ExpertAdviceTimelineView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
+            if job.status == "running" {
+                Label("专家团讨论中", systemImage: "hourglass")
+                    .font(.subheadline.weight(.semibold))
+            }
             ContextUsageView(context: job.contextUsage)
-            JudgeView(artifact: job.artifact)
+            if job.artifact.overview.isEmpty {
+                Text("裁判结论生成中")
+                    .font(.headline)
+                    .foregroundStyle(.secondary)
+            } else {
+                JudgeView(artifact: job.artifact)
+            }
 
             ForEach(rounds, id: \.number) { round in
                 VStack(alignment: .leading, spacing: 12) {

@@ -152,5 +152,7 @@ def provider_from_env(name: str = "deepseek") -> LLMProvider:
     if name == "deepseek":
         return DeepSeekProvider()
     if name == "heuristic":
+        if os.getenv("EMOTION_TALK_ALLOW_HEURISTIC", "").lower() not in {"1", "true", "yes"}:
+            raise ProviderError("HeuristicProvider is disabled. Set EMOTION_TALK_ALLOW_HEURISTIC=true for local wiring tests.")
         return HeuristicProvider()
     raise ProviderError(f"Unsupported provider: {name}")

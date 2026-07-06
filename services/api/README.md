@@ -168,7 +168,7 @@ Provider options:
 
 ```text
 deepseek   # requires DEEPSEEK_API_KEY
-heuristic  # offline wiring fallback
+heuristic  # offline wiring fallback; requires EMOTION_TALK_ALLOW_HEURISTIC=true
 ```
 
 Generated files:
@@ -190,6 +190,7 @@ Run with local SQLite:
 ```bash
 PYTHONPATH=services/api/src \
 EMOTION_TALK_LLM_PROVIDER=heuristic \
+EMOTION_TALK_ALLOW_HEURISTIC=true \
 EMOTION_TALK_DB_PATH=.data/local-dev.sqlite3 \
 .venv/bin/python -m uvicorn emotion_talk_api.app:app --host 127.0.0.1 --port 8000
 ```

@@ -50,6 +50,21 @@ public struct TranscriptMetadata: Codable, Equatable, Sendable {
     public let createdAtText: String
     public let durationText: String
     public let segmentCount: Int
+    public let segments: [TranscriptSegmentRequest]?
+
+    public init(
+        title: String,
+        createdAtText: String,
+        durationText: String,
+        segmentCount: Int,
+        segments: [TranscriptSegmentRequest]? = nil
+    ) {
+        self.title = title
+        self.createdAtText = createdAtText
+        self.durationText = durationText
+        self.segmentCount = segmentCount
+        self.segments = segments
+    }
 }
 
 public struct AudioObject: Codable, Equatable, Sendable {
@@ -263,6 +278,14 @@ public struct DeliberationEventPayload: Codable, Equatable, Sendable {
     public let title: String?
     public let content: String?
     public let status: String?
+    public let message: String?
+
+    public init(title: String? = nil, content: String? = nil, status: String? = nil, message: String? = nil) {
+        self.title = title
+        self.content = content
+        self.status = status
+        self.message = message
+    }
 }
 
 public struct DeliberationArtifact: Codable, Equatable, Sendable {

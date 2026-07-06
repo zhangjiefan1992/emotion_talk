@@ -9,6 +9,7 @@ public protocol EmotionTalkAPI {
     func submitTranscript(recordingId: String, request: TranscriptSubmitRequest) async throws -> RecordingResponse
     func createSummaryJob(recordingId: String) async throws -> SummaryArtifact
     func createExpertAdviceJob(recordingId: String, request: ExpertAdviceJobRequest) async throws -> ExpertAdviceJobResponse
+    func fetchExpertAdviceJob(jobId: String) async throws -> ExpertAdviceJobResponse
     func fetchExpertAdviceEvents(jobId: String) async throws -> [DeliberationEvent]
     func fetchExpertAdviceArtifact(jobId: String) async throws -> DeliberationArtifact
 }
@@ -62,6 +63,10 @@ public struct EmotionTalkHTTPClient: EmotionTalkAPI {
 
     public func createExpertAdviceJob(recordingId: String, request: ExpertAdviceJobRequest) async throws -> ExpertAdviceJobResponse {
         try await send(path: "/recordings/\(recordingId)/expert-advice-jobs", method: "POST", body: request)
+    }
+
+    public func fetchExpertAdviceJob(jobId: String) async throws -> ExpertAdviceJobResponse {
+        try await send(path: "/expert-advice-jobs/\(jobId)", method: "GET", body: Optional<EmptyRequest>.none)
     }
 
     public func fetchExpertAdviceEvents(jobId: String) async throws -> [DeliberationEvent] {

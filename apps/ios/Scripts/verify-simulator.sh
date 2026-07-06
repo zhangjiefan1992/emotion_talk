@@ -106,7 +106,7 @@ fi
 (
   cd "${ROOT_DIR}"
   PYTHONPATH=services/api/src \
-  EMOTION_TALK_LLM_PROVIDER="${EMOTION_TALK_LLM_PROVIDER:-heuristic}" \
+  EMOTION_TALK_LLM_PROVIDER="${EMOTION_TALK_LLM_PROVIDER:-deepseek}" \
   .venv/bin/python -m uvicorn emotion_talk_api.app:app --host 127.0.0.1 --port "${PORT}"
 ) >"${BACKEND_LOG}" 2>&1 &
 SERVER_PID="$!"

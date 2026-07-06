@@ -124,15 +124,42 @@ private struct TranscriptMetadataView: View {
     let recording: RecordingResponse
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             if let transcript = recording.transcript {
-                MetadataRow(title: "标题", value: transcript.title)
-                MetadataRow(title: "创建时间", value: transcript.createdAtText)
-                MetadataRow(title: "时长", value: transcript.durationText)
-                MetadataRow(title: "片段", value: "\(transcript.segmentCount)")
-                if let audioObject = recording.audioObject {
-                    MetadataRow(title: "录音文件", value: audioObject.mimeType)
-                    MetadataRow(title: "对象键", value: audioObject.objectKey)
+                VStack(alignment: .leading, spacing: 12) {
+                    if let segments = transcript.segments, !segments.isEmpty {
+                        ForEach(segments) { segment in
+                            VStack(alignment: .leading, spacing: 6) {
+                                HStack {
+                                    Text(segment.speaker)
+                                        .font(.subheadline.weight(.semibold))
+                                    Text(segment.timestamp)
+                                        .font(.caption.monospacedDigit())
+                                        .foregroundStyle(.secondary)
+                                }
+                                Text(segment.text)
+                                    .font(.body)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(12)
+                            .background(Color.appSecondaryGroupedBackground, in: RoundedRectangle(cornerRadius: 8))
+                        }
+                    } else {
+                        ContentUnavailableView("暂无逐句转写", systemImage: "text.bubble")
+                    }
+                }
+
+                Divider()
+
+                VStack(alignment: .leading, spacing: 12) {
+                    MetadataRow(title: "标题", value: transcript.title)
+                    MetadataRow(title: "创建时间", value: transcript.createdAtText)
+                    MetadataRow(title: "时长", value: transcript.durationText)
+                    MetadataRow(title: "片段", value: "\(transcript.segmentCount)")
+                    if let audioObject = recording.audioObject {
+                        MetadataRow(title: "录音文件", value: audioObject.mimeType)
+                        MetadataRow(title: "对象键", value: audioObject.objectKey)
+                    }
                 }
             } else {
                 ContentUnavailableView("暂无转写", systemImage: "text.bubble")
@@ -168,8 +195,13 @@ private struct AdviceRequestView: View {
                 .buttonStyle(.borderedProminent)
                 .accessibilityIdentifier("requestExpertAdviceButton")
             case .loading:
-                ProgressView("专家团讨论中")
-                    .frame(maxWidth: .infinity)
+                VStack(alignment: .leading, spacing: 14) {
+                    ProgressView("专家团讨论中")
+                    if let expertAdvice {
+                        ExpertAdviceTimelineView(job: expertAdvice)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             case .loaded:
                 if let expertAdvice {
                     ExpertAdviceTimelineView(job: expertAdvice)

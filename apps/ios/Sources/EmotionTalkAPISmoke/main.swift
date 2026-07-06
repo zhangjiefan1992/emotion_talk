@@ -42,10 +42,11 @@ struct EmotionTalkAPISmoke {
             )
         )
         let summary = try await client.createSummaryJob(recordingId: recording.recordingId)
-        let advice = try await client.createExpertAdviceJob(
+        let createdAdvice = try await client.createExpertAdviceJob(
             recordingId: recording.recordingId,
             request: ExpertAdviceJobRequest(contextScope: .currentOnly, historyLimit: 0, includeProfile: false)
         )
+        let advice = try await waitForAdvice(client: client, jobId: createdAdvice.jobId)
         let events = try await client.fetchExpertAdviceEvents(jobId: advice.jobId)
         let artifact = try await client.fetchExpertAdviceArtifact(jobId: advice.jobId)
 
@@ -67,6 +68,17 @@ struct EmotionTalkAPISmoke {
         else {
             throw SmokeError.unexpectedResponse
         }
+    }
+
+    private static func waitForAdvice(client: EmotionTalkHTTPClient, jobId: String) async throws -> ExpertAdviceJobResponse {
+        for _ in 0..<180 {
+            let job = try await client.fetchExpertAdviceJob(jobId: jobId)
+            if job.status != "running" {
+                return job
+            }
+            try await Task.sleep(for: .seconds(1))
+        }
+        throw SmokeError.unexpectedResponse
     }
 }
 

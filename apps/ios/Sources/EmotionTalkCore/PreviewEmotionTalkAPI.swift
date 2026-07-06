@@ -66,7 +66,10 @@ public struct PreviewEmotionTalkAPIClient: EmotionTalkAPI {
                 title: request.title ?? "今天的对话",
                 createdAtText: request.createdAtText,
                 durationText: request.durationText,
-                segmentCount: 1
+                segmentCount: 1,
+                segments: [
+                    TranscriptSegmentRequest(speaker: "我", timestamp: "00:01", text: "今天测试真实录音识别。")
+                ]
             ),
             summaryArtifact: nil,
             audioObject: AudioObject(objectKey: "preview/source.caf", mimeType: request.mimeType, byteSize: nil, checksumSha256: nil),
@@ -87,7 +90,8 @@ public struct PreviewEmotionTalkAPIClient: EmotionTalkAPI {
                 title: request.title ?? "今天的对话",
                 createdAtText: request.createdAtText,
                 durationText: request.durationText,
-                segmentCount: request.segments.count
+                segmentCount: request.segments.count,
+                segments: request.segments
             ),
             summaryArtifact: nil,
             audioObject: nil,
@@ -137,6 +141,25 @@ public struct PreviewEmotionTalkAPIClient: EmotionTalkAPI {
 
     public func fetchExpertAdviceEvents(jobId: String) async throws -> [DeliberationEvent] {
         Self.previewEvents
+    }
+
+    public func fetchExpertAdviceJob(jobId: String) async throws -> ExpertAdviceJobResponse {
+        ExpertAdviceJobResponse(
+            jobId: jobId,
+            sourceType: "recording",
+            sourceId: "rec_preview",
+            template: "emotion_talk_expert_team_v1",
+            status: "completed",
+            events: Self.previewEvents,
+            artifact: Self.previewArtifact,
+            contextUsage: ContextUsage(
+                scope: .currentOnly,
+                primary: "current_recording",
+                historyCount: 0,
+                historySources: [],
+                profileIncluded: false
+            )
+        )
     }
 
     public func fetchExpertAdviceArtifact(jobId: String) async throws -> DeliberationArtifact {

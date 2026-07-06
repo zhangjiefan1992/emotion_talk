@@ -13,7 +13,7 @@ import type {
 } from "../../types";
 
 type ScreenName = "home" | "detail" | "advice";
-type DetailTab = "summary" | "transcript";
+type DetailTab = "summary" | "transcript" | "advice";
 type BackendMode = "checking" | "connected" | "offline";
 type CaptureMode = "none" | "microphone";
 type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
@@ -81,9 +81,9 @@ const detailRecord = computed<ConversationRecord>(() => {
   };
 });
 const visibleSummary = computed(() => summary.value ?? activeRecord.value?.summary ?? emptySummary(detailRecord.value.title));
-const visibleAdvice = computed(() => advice.value ?? emptyAdvice(contextScope));
+const visibleAdvice = computed(() => advice.value);
 const visibleAdviceEvents = computed(() =>
-  visibleAdvice.value.events.filter((event) => event.payload.content && event.round && event.participant),
+  (visibleAdvice.value?.events ?? []).filter((event) => event.payload.content && event.round && event.participant),
 );
 const backendText = computed(() => (backendMode.value === "connected" ? "服务端已连接" : backendMode.value === "offline" ? "服务端未连接" : "连接中"));
 const spaceSubtitle = computed(() => `${records.value.length} 条真实记录`);
@@ -248,31 +248,6 @@ function emptySummary(title: string): SummaryArtifact {
   };
 }
 
-function emptyAdvice(scope: ContextScope): ExpertAdviceJobResponse {
-  return {
-    jobId: "pending-job",
-    sourceType: "recording",
-    sourceId: "pending-recording",
-    template: "expert_team_v1",
-    status: "pending",
-    contextUsage: {
-      scope,
-      primary: "current_recording",
-      historyCount: 0,
-      historySources: [],
-      profileIncluded: false,
-    },
-    events: [],
-    artifact: {
-      overview: "完成一次真实录音和 AI 纪要后，专家团会在这里生成多轮讨论和裁判结论。",
-      processSummary: [],
-      suggestions: [],
-      keyUncertainties: [],
-      safetyBoundary: "建议仅供参考，最终决定权在你手中。",
-    },
-  };
-}
-
 async function ensureSpace() {
   if (spaceId.value) return spaceId.value;
   const space = await emotionTalkApi.createSpace("家的倾诉空间");
@@ -355,13 +330,24 @@ async function openAdvice() {
   try {
     const record = activeRecord.value;
     if (!record?.recordingId || backendMode.value !== "connected") throw new Error("请先完成一次真实录音和纪要。");
-    screen.value = "advice";
-    advice.value =
-      await emotionTalkApi.createExpertAdviceJob(record.recordingId, contextScope);
+    screen.value = "detail";
+    detailTab.value = "advice";
+    advice.value = await emotionTalkApi.createExpertAdviceJob(record.recordingId, contextScope);
+    advice.value = await pollAdvice(advice.value.jobId);
   } catch (error) {
     screen.value = "detail";
     errorText.value = error instanceof Error ? error.message : "专家团建议生成失败。";
   }
+}
+
+async function pollAdvice(jobId: string) {
+  for (let index = 0; index < 180; index += 1) {
+    const job = await emotionTalkApi.fetchExpertAdviceJob(jobId);
+    advice.value = job;
+    if (job.status !== "running") return job;
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+  throw new Error("专家团生成超时。");
 }
 </script>
 
@@ -440,7 +426,11 @@ async function openAdvice() {
         <view class="live-top"><text>{{ status === "processing" ? "生成纪要中" : captureText }}</text><text>{{ formatDuration(elapsed) }}</text></view>
         <button class="finish-button" :disabled="status === 'processing'" @tap="finishRecording">结束并生成纪要</button>
       </view>
-      <view class="tabs"><button :class="{ 'active-tab': detailTab === 'summary' }" @tap="detailTab = 'summary'">纪要</button><button :class="{ 'active-tab': detailTab === 'transcript' }" @tap="detailTab = 'transcript'">转写</button></view>
+      <view class="tabs">
+        <button :class="{ 'active-tab': detailTab === 'summary' }" @tap="detailTab = 'summary'">纪要</button>
+        <button :class="{ 'active-tab': detailTab === 'transcript' }" @tap="detailTab = 'transcript'">转写</button>
+        <button :class="{ 'active-tab': detailTab === 'advice' }" @tap="detailTab = 'advice'">专家团</button>
+      </view>
       <scroll-view scroll-y class="detail-scroll">
         <view v-if="detailTab === 'summary'" class="summary-card">
           <text class="section-label">AI 纪要</text>
@@ -453,17 +443,34 @@ async function openAdvice() {
           </view>
           <button class="primary" @tap="openAdvice">专家团建议</button>
         </view>
-        <view v-else class="transcript">
+        <view v-else-if="detailTab === 'transcript'" class="transcript">
           <view v-if="!detailSegments.length" class="empty-line">正在等待实时转写。如果浏览器不支持实时识别，结束后会用录音生成最终文本。</view>
           <view v-for="segment in detailSegments" :key="`${segment.timestamp}-${segment.text}`" class="segment">
             <text class="speaker">{{ segment.speaker }} · {{ segment.timestamp }}</text>
             <text class="segment-text">{{ segment.text }}</text>
           </view>
         </view>
+        <view v-else class="summary-card">
+          <button v-if="!visibleAdvice" class="primary" @tap="openAdvice">生成专家团建议</button>
+          <view v-else-if="visibleAdvice.status === 'running'" class="empty-line">专家团讨论中，请稍等。</view>
+          <view v-else-if="visibleAdvice.status === 'completed'">
+            <text class="section-label">裁判结论</text>
+            <text class="summary-title">{{ visibleAdvice.artifact.overview }}</text>
+            <view v-for="suggestion in visibleAdvice.artifact.suggestions" :key="suggestion.title" class="advice">
+              <text class="chapter-title">{{ suggestion.title }}</text>
+              <text class="paragraph">{{ suggestion.body }}</text>
+            </view>
+            <view v-for="event in visibleAdviceEvents" :key="event.eventId" class="event">
+              <text class="speaker">第 {{ event.round }} 轮 · {{ participantNames[event.participant || ''] || event.participant }}</text>
+              <text class="segment-text">{{ event.payload.content }}</text>
+            </view>
+          </view>
+          <view v-else class="error-card">专家团生成失败。</view>
+        </view>
       </scroll-view>
     </view>
 
-    <view v-else class="screen">
+    <view v-else-if="visibleAdvice" class="screen">
       <view class="status"><button @tap="screen = 'detail'">‹ 详情</button><text>专家团</text></view>
       <scroll-view scroll-y class="detail-scroll">
         <view class="summary-card">

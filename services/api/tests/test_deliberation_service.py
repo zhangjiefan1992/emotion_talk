@@ -1,6 +1,8 @@
 import json
+import os
 import sys
 import tempfile
+import time
 import unittest
 from unittest.mock import patch
 from pathlib import Path
@@ -17,7 +19,7 @@ from emotion_talk_api.app import _audio_extension, create_app
 from emotion_talk_api.deliberation import DeliberationService
 from emotion_talk_api.models import HistoricalContextItem
 from emotion_talk_api.models import TranscriptSegment
-from emotion_talk_api.providers import HeuristicProvider
+from emotion_talk_api.providers import HeuristicProvider, ProviderError, provider_from_env
 from emotion_talk_api.reports import render_html_report, render_test_report
 from emotion_talk_api.storage import SQLiteStorage
 from emotion_talk_api.transcript import parse_markdown_transcript
@@ -53,12 +55,43 @@ SAMPLE_MARKDOWN = """# 06-13 职业转型与长期规划(1)
 """
 
 
+def wait_for_job(client: TestClient, job_id: str, *, timeout: float = 2.0) -> dict:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        job = client.get(f"/expert-advice-jobs/{job_id}").json()
+        if job["status"] != "running":
+            return job
+        time.sleep(0.02)
+    raise AssertionError(f"job {job_id} did not finish")
+
+
 class FakeProvider:
     def __init__(self):
         self.calls = []
 
     def complete(self, prompt: str, *, purpose: str) -> str:
         self.calls.append((purpose, prompt))
+        if purpose == "summary":
+            return json.dumps(
+                {
+                    "title": "职业转型与长期规划",
+                    "overview": "这次对话先把语言学习、岗位验证和家庭节奏放到同一张图里看。",
+                    "keyPoints": ["七月主攻 B1 学习。", "每周保留一个低负担职业验证动作。"],
+                    "chapters": [
+                        {
+                            "title": "确认学习机会",
+                            "startTimestamp": "00:00",
+                            "summary": "对话确认六七月有西班牙语 B1 暑期班。",
+                        },
+                        {
+                            "title": "拆分现实节奏",
+                            "startTimestamp": "00:31",
+                            "summary": "讨论把上课、作业、家庭和身体调整分开安排。",
+                        },
+                    ],
+                },
+                ensure_ascii=False,
+            )
         if purpose.startswith("initial:life_coach"):
             return "先把七月定义为 B1 冲刺月，目标不是学完一本书，而是恢复可求职的语言信心。"
         if purpose.startswith("initial:counselor"):
@@ -210,6 +243,55 @@ class DeliberationServiceTest(unittest.TestCase):
 
 
 class ApiTest(unittest.TestCase):
+    def test_heuristic_provider_requires_explicit_local_flag(self):
+        with patch.dict(os.environ, {}, clear=True):
+            with self.assertRaises(ProviderError):
+                provider_from_env("heuristic")
+        with patch.dict(os.environ, {"EMOTION_TALK_ALLOW_HEURISTIC": "true"}, clear=True):
+            self.assertIsInstance(provider_from_env("heuristic"), HeuristicProvider)
+
+    def test_summary_job_uses_llm_provider(self):
+        provider = FakeProvider()
+        app = create_app(provider=provider)
+        client = TestClient(app)
+
+        space = client.post("/spaces", json={"name": "家庭倾诉空间"}).json()
+        recording = client.post(
+            "/recordings",
+            json={"spaceId": space["spaceId"], "title": "06-13 职业转型与长期规划"},
+        ).json()
+        client.post(
+            f"/recordings/{recording['recordingId']}/transcript",
+            json={"markdown": SAMPLE_MARKDOWN},
+        )
+
+        response = client.post(f"/recordings/{recording['recordingId']}/summary-jobs", json={})
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["modelTrace"]["runtime"], "llm_summary")
+        self.assertIn("语言学习", data["overview"])
+        self.assertEqual(provider.calls[0][0], "summary")
+
+    def test_summary_job_returns_503_when_llm_key_is_missing(self):
+        with patch.dict(os.environ, {"EMOTION_TALK_LLM_PROVIDER": "deepseek"}, clear=True):
+            app = create_app()
+            client = TestClient(app)
+            space = client.post("/spaces", json={"name": "家庭倾诉空间"}).json()
+            recording = client.post(
+                "/recordings",
+                json={"spaceId": space["spaceId"], "title": "06-13 职业转型与长期规划"},
+            ).json()
+            client.post(
+                f"/recordings/{recording['recordingId']}/transcript",
+                json={"markdown": SAMPLE_MARKDOWN},
+            )
+
+            response = client.post(f"/recordings/{recording['recordingId']}/summary-jobs", json={})
+
+        self.assertEqual(response.status_code, 503)
+        self.assertIn("DEEPSEEK_API_KEY", response.json()["detail"])
+
     def test_post_markdown_returns_job_artifact(self):
         app = create_app(provider=FakeProvider())
         client = TestClient(app)
@@ -259,7 +341,10 @@ class ApiTest(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        job = response.json()
+        created_job = response.json()
+        self.assertEqual(created_job["status"], "running")
+        job = wait_for_job(client, created_job["jobId"])
+        self.assertEqual(job["status"], "completed")
         self.assertEqual(job["sourceType"], "recording")
         self.assertEqual(job["sourceId"], current["recordingId"])
         self.assertEqual(job["contextUsage"]["scope"], "current_with_history")

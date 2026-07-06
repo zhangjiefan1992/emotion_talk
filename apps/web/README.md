@@ -20,7 +20,7 @@
 
 ```bash
 cd /Users/jeff/Documents/emotion_talk
-PYTHONPATH=services/api/src EMOTION_TALK_LLM_PROVIDER=heuristic .venv/bin/python -m uvicorn emotion_talk_api.app:app --host 127.0.0.1 --port 8000
+PYTHONPATH=services/api/src EMOTION_TALK_LLM_PROVIDER=deepseek DEEPSEEK_API_KEY=... .venv/bin/python -m uvicorn emotion_talk_api.app:app --host 127.0.0.1 --port 8000
 ```
 
 再启动 H5：

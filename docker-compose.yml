@@ -4,7 +4,8 @@ services:
       context: .
       dockerfile: services/api/Dockerfile
     environment:
-      EMOTION_TALK_LLM_PROVIDER: ${EMOTION_TALK_LLM_PROVIDER:-heuristic}
+      EMOTION_TALK_LLM_PROVIDER: ${EMOTION_TALK_LLM_PROVIDER:-deepseek}
+      EMOTION_TALK_ALLOW_HEURISTIC: ${EMOTION_TALK_ALLOW_HEURISTIC:-}
       EMOTION_TALK_DB_PATH: ${EMOTION_TALK_DB_PATH:-/data/emotion_talk.sqlite3}
       BAILIAN_API_KEY: ${BAILIAN_API_KEY:-}
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}

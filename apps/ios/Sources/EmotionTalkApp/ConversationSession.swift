@@ -162,7 +162,7 @@ final class ConversationSession {
         guard let recording else { return }
         advicePhase = .loading
         do {
-            expertAdvice = try await api.createExpertAdviceJob(
+            let createdJob = try await api.createExpertAdviceJob(
                 recordingId: recording.recordingId,
                 request: ExpertAdviceJobRequest(
                     contextScope: scope,
@@ -170,10 +170,25 @@ final class ConversationSession {
                     includeProfile: scope == .currentWithHistory
                 )
             )
-            advicePhase = .loaded
+            expertAdvice = createdJob
+            let completedJob = try await pollExpertAdviceJob(api: api, jobId: createdJob.jobId)
+            expertAdvice = completedJob
+            advicePhase = completedJob.status == "completed" ? .loaded : .failed("专家团生成失败")
         } catch {
             advicePhase = .failed(error.localizedDescription)
         }
+    }
+
+    private func pollExpertAdviceJob(api: any EmotionTalkAPI, jobId: String) async throws -> ExpertAdviceJobResponse {
+        for _ in 0..<180 {
+            let job = try await api.fetchExpertAdviceJob(jobId: jobId)
+            expertAdvice = job
+            if job.status != "running" {
+                return job
+            }
+            try await Task.sleep(for: .seconds(1))
+        }
+        throw LiveSpeechRecorderError.realtimeASRFailed("专家团生成超时")
     }
 
     func reset() {

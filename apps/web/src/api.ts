@@ -140,6 +140,10 @@ export const emotionTalkApi = {
       },
     });
   },
+
+  fetchExpertAdviceJob(jobId: string) {
+    return request<ExpertAdviceJobResponse>(`/expert-advice-jobs/${jobId}`);
+  },
 };
 
 function blobToBase64(blob: Blob): Promise<string> {

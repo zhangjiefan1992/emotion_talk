@@ -45,17 +45,18 @@ WEB_PORT=8081 docker compose up --build -d
 
 ## 配置
 
-默认使用离线 heuristic provider，方便无密钥部署验证：
-
-```env
-EMOTION_TALK_LLM_PROVIDER=heuristic
-```
-
-切到 DeepSeek：
+验收和生产默认使用 DeepSeek，缺 key 时必须失败：
 
 ```env
 EMOTION_TALK_LLM_PROVIDER=deepseek
 DEEPSEEK_API_KEY=...
+```
+
+本地无密钥 wiring 测试才允许切到 heuristic：
+
+```env
+EMOTION_TALK_LLM_PROVIDER=heuristic
+EMOTION_TALK_ALLOW_HEURISTIC=true
 ```
 
 不要把真实 API key 提交到 git。

@@ -15,16 +15,19 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 
 from .deliberation import DeliberationService
 from .models import (
+    DeliberationArtifact,
+    DeliberationEvent,
+    DeliberationJob,
     HistoricalContextItem,
     RecordingTranscript,
     TranscriptSegment,
 )
-from .providers import LLMProvider, provider_from_env
+from .providers import LLMProvider, ProviderError, provider_from_env
 from .storage import MemoryStorage, StorageBackend, storage_from_env
 from .transcript import parse_markdown_transcript
 
@@ -160,27 +163,73 @@ def _transcript_from_request(request: TranscriptSubmitRequest, *, fallback_title
     )
 
 
-def _summary_from_transcript(transcript: RecordingTranscript) -> dict[str, Any]:
-    key_points = [segment.text for segment in transcript.segments[:5]]
+def _summary_from_transcript(transcript: RecordingTranscript, provider: LLMProvider) -> dict[str, Any]:
+    raw = provider.complete(_summary_prompt(transcript), purpose="summary")
+    data = _parse_json_object(raw, purpose="summary")
+    overview = str(data.get("overview", "")).strip()
+    if not overview:
+        raise HTTPException(status_code=502, detail="LLM summary missing overview")
+    key_points = [str(item).strip() for item in data.get("keyPoints", []) if str(item).strip()]
+    chapters = [
+        {
+            "title": str(item.get("title", "")).strip() or "过程",
+            "startTimestamp": str(item.get("startTimestamp", "")).strip() or "00:00",
+            "summary": str(item.get("summary", "")).strip(),
+        }
+        for item in data.get("chapters", [])
+        if isinstance(item, dict) and str(item.get("summary", "")).strip()
+    ]
     return {
         "status": "completed",
         "title": transcript.title,
-        "overview": _compact_summary(transcript.full_text),
+        "overview": overview,
         "keyPoints": key_points,
-        "chapters": [
-            {
-                "title": "完整对话",
-                "startTimestamp": transcript.segments[0].timestamp if transcript.segments else "00:00",
-                "summary": _compact_summary(transcript.full_text, limit=120),
-            }
-        ]
-        if transcript.segments
-        else [],
+        "chapters": chapters,
         "modelTrace": {
-            "runtime": "dev_summary_stub",
-            "note": "V1 contract placeholder; replace with LLM summary worker.",
+            "runtime": "llm_summary",
+            "templateVersion": "emotion_talk_summary_v1",
         },
     }
+
+
+def _summary_prompt(transcript: RecordingTranscript) -> str:
+    return f"""请基于下面这次倾诉转写生成 AI 纪要。
+
+要求：
+- 只依据转写内容，不要套用样例，不要脑补人生建议。
+- 结构是“总-过程-总”：overview 是第一个总，chapters 是过程，keyPoints 是最后收束。
+- 输出 JSON，不要 Markdown。
+- JSON schema:
+{{
+  "title": "简短标题",
+  "overview": "100字以内总览",
+  "keyPoints": ["最后收束要点1", "最后收束要点2"],
+  "chapters": [
+    {{"title": "阶段标题", "startTimestamp": "00:00", "summary": "阶段摘要"}}
+  ]
+}}
+
+转写：
+{transcript.full_text}
+"""
+
+
+def _parse_json_object(text: str, *, purpose: str) -> dict[str, Any]:
+    clean = text.strip()
+    if clean.startswith("```"):
+        clean = clean.strip("`")
+        clean = clean.removeprefix("json").strip()
+    start = clean.find("{")
+    end = clean.rfind("}")
+    if start == -1 or end == -1 or end < start:
+        raise HTTPException(status_code=502, detail=f"LLM {purpose} did not return JSON")
+    try:
+        data = json.loads(clean[start : end + 1])
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=502, detail=f"LLM {purpose} returned invalid JSON") from exc
+    if not isinstance(data, dict):
+        raise HTTPException(status_code=502, detail=f"LLM {purpose} JSON must be an object")
+    return data
 
 
 def create_app(
@@ -193,6 +242,13 @@ def create_app(
     spaces: dict[str, dict[str, Any]] = store.load_spaces()
     recordings: dict[str, dict[str, Any]] = store.load_recordings()
     jobs: dict[str, Any] = store.load_jobs()
+    jobs_lock = threading.Lock()
+
+    @app.exception_handler(ProviderError)
+    async def provider_error_handler(_request, exc: ProviderError) -> JSONResponse:
+        message = str(exc)
+        status = 503 if "required" in message or "disabled" in message else 502
+        return JSONResponse(status_code=status, content={"detail": message})
 
     @app.get("/health")
     def health() -> dict[str, str]:
@@ -285,7 +341,7 @@ def create_app(
         request: AudioUploadAuthorizationRequest,
     ) -> dict[str, Any]:
         record = _require_recording(recordings, recording_id)
-        object_key = f"spaces/{record['spaceId']}/recordings/{recording_id}/audio/source.mp3"
+        object_key = f"spaces/{record['spaceId']}/recordings/{recording_id}/audio/source.{_audio_extension(request.mime_type)}"
         authorization = {
             "uploadId": _new_id("upload"),
             "recordingId": recording_id,
@@ -362,7 +418,7 @@ def create_app(
         transcript = _require_transcript(record)
         if record["summaryArtifact"] and not request.force:
             return record["summaryArtifact"]
-        summary = _summary_from_transcript(transcript)
+        summary = _summary_from_transcript(transcript, _selected_provider(provider))
         summary["summaryJobId"] = _new_id("summary")
         summary["recordingId"] = recording_id
         record["summaryArtifact"] = summary
@@ -386,19 +442,50 @@ def create_app(
         )
         history.extend(item.to_context_item() for item in request.historical_context)
         profile_context = _space_profile_stub(spaces[record["spaceId"]]) if request.include_profile else {}
-        job = DeliberationService(provider=selected_provider).run_from_transcript(
-            transcript,
+        service = DeliberationService(provider=selected_provider)
+        job_id = _new_id("job")
+        running_job = DeliberationJob(
+            job_id=job_id,
             source_type="recording",
             source_id=recording_id,
-            context_scope=request.context_scope,
-            historical_context=history,
-            profile_context=profile_context,
+            template=service.template,
+            status="running",
+            input_snapshot=service._build_input_snapshot(
+                transcript,
+                context_scope=request.context_scope,
+                historical_context=history,
+                profile_context=profile_context,
+            ),
+            events=[],
+            artifact=_empty_deliberation_artifact(),
+            context_usage=service._build_context_usage(
+                context_scope=request.context_scope,
+                historical_context=history,
+                profile_context=profile_context,
+            ),
         )
-        jobs[job.job_id] = job
-        store.save_job(job)
-        record["expertAdviceJobIds"].append(job.job_id)
+        with jobs_lock:
+            jobs[job_id] = running_job
+            store.save_job(running_job)
+        record["expertAdviceJobIds"].append(job_id)
         store.save_recording(record)
-        return job.to_dict()
+        threading.Thread(
+            target=_run_expert_advice_job,
+            args=(
+                job_id,
+                service,
+                transcript,
+                recording_id,
+                request.context_scope,
+                history,
+                profile_context,
+                jobs,
+                jobs_lock,
+                store,
+            ),
+            daemon=True,
+        ).start()
+        return running_job.to_dict()
 
     @app.get("/expert-advice-jobs/{job_id}")
     def get_expert_advice_job(job_id: str) -> dict[str, Any]:
@@ -417,6 +504,66 @@ def create_app(
 
 def _selected_provider(provider: LLMProvider | None) -> LLMProvider:
     return provider or provider_from_env(os.getenv("EMOTION_TALK_LLM_PROVIDER", "deepseek"))
+
+
+def _empty_deliberation_artifact() -> DeliberationArtifact:
+    return DeliberationArtifact(
+        overview="",
+        process_summary=[],
+        suggestions=[],
+        key_uncertainties=[],
+        safety_boundary="",
+    )
+
+
+def _run_expert_advice_job(
+    job_id: str,
+    service: DeliberationService,
+    transcript: RecordingTranscript,
+    recording_id: str,
+    context_scope: str,
+    history: list[HistoricalContextItem],
+    profile_context: dict[str, Any],
+    jobs: dict[str, DeliberationJob],
+    jobs_lock: threading.Lock,
+    store: StorageBackend,
+) -> None:
+    def save_event(event: DeliberationEvent) -> None:
+        with jobs_lock:
+            job = jobs[job_id]
+            job.events.append(event)
+            store.save_job(job)
+
+    try:
+        final_job = service.run_from_transcript(
+            transcript,
+            source_type="recording",
+            source_id=recording_id,
+            context_scope=context_scope,
+            historical_context=history,
+            profile_context=profile_context,
+            job_id=job_id,
+            on_event=save_event,
+        )
+        with jobs_lock:
+            jobs[job_id] = final_job
+            store.save_job(final_job)
+    except Exception as exc:
+        with jobs_lock:
+            job = jobs[job_id]
+            job.status = "failed"
+            seq = (job.events[-1].seq if job.events else 0) + 1
+            job.events.append(
+                DeliberationEvent(
+                    event_id=f"evt_{seq:04d}",
+                    job_id=job_id,
+                    seq=seq,
+                    type="job_failed",
+                    visibility="user_visible",
+                    payload={"message": str(exc)},
+                )
+            )
+            store.save_job(job)
 
 
 def _require_recording(recordings: dict[str, dict[str, Any]], recording_id: str) -> dict[str, Any]:
