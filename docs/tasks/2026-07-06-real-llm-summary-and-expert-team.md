@@ -34,6 +34,7 @@ Status: h5_local_remote_passed_ios_build_passed_remote_synced_client_manual_pend
 - H5 录音链路仍受浏览器录音权限和部署协议影响，需要单独验证。
 - 远程服务器当前使用热更新容器完成验证；Docker Hub 超时导致镜像 rebuild 暂未完成，但运行中的 API 容器已同步最新 `app.py`。
 - 本地 API 必须使用 `PYTHONPATH=services/api/src` 启动；否则会加载虚拟环境里的旧安装包，导致空间接口 404。
+- Swift/URLSession 直接访问公网 HTTP IP `http://121.41.92.161` 会在本机网络栈报 `NSURLErrorDomain -1005`，Nginx 无访问日志；iOS 真机远程验收需要 HTTPS 域名，或临时使用 SSH tunnel / 局域网地址。
 
 ## Tasks
 
@@ -184,6 +185,7 @@ Done when:
 - 远程 `/api/health` 通过。
 - 远程真实接口完成一次：录音记录、转写、LLM 纪要、专家团 job、events、artifact。
 - iOS 真机和 H5 都完成同一条链路验收。
+- iOS API client smoke 可通过远程真实服务跑完整链路。
 
 Verify:
 
@@ -194,7 +196,7 @@ curl -fsS http://121.41.92.161/api/health
 Needs human:
 
 - 真机点录音、结束、查看三个 tab。
-- 如果域名/HTTPS 没完成，H5 录音能力以 localhost 或真机 iOS 优先验收。
+- 如果域名/HTTPS 没完成，H5 录音能力以 localhost 优先验收；iOS 远程验收临时走 SSH tunnel 或局域网地址。
 
 ### Task 7: H5 点击可用与空间管理闭环
 
@@ -240,6 +242,7 @@ Latest verification:
 - 2026-07-07 远程真实接口 smoke 通过：`summary.modelTrace.runtime=llm_summary`；专家团 job 从 `running` 逐步增长到 20 个 events，最终 `completed`，包含第 1/2/3 轮与裁判 artifact。
 - 2026-07-07 H5 本地 Chrome Extension 验证专家团 tab：运行中展示任务进度和已生成过程事件，完成后展示裁判结论、过程总结和事件时间轴。
 - 2026-07-07 H5 远程 Chrome Extension 验证专家团上下文选择：详情页专家团 tab 默认 `本次/current_only` 选中，点击 `结合历史/current_with_history` 后 active 状态切换，console 无 error/warn。
+- 2026-07-07 Swift API smoke 经 SSH tunnel 打远程真实服务通过：`recordingStatus=transcribed`、`summaryStatus=completed`、`adviceStatus=completed`、`contextScope=current_only`、`eventCount=20`、`suggestionCount=3`。
 
 Needs human:
 
@@ -259,6 +262,7 @@ Update 2026-07-06:
 - 2026-07-07 远程 API 使用临时 owner 验证：默认空间自动创建、默认空间重名返回 409、创建 4 个附加空间后第 6 个返回 409、`POST /users/{owner}/current-space` 可切换当前空间。
 - 2026-07-07 远程 API 验证 `00:00` / `00:18` 分钟级时间戳可解析为 2 段，空转写返回 `422 transcript text is empty`，避免空输入触发 AI 脑补。
 - 2026-07-07 H5 专家团上下文选择与 iOS 对齐：默认 `本次`，用户可切换 `结合历史` 后再生成专家团建议。
+- 2026-07-07 H5 空间管理本地与远程复验：`我的 -> 空间管理 -> 创建空间 -> 保存` 均可点击并成功落库；远程 `http://121.41.92.161` 从 `1/5` 变为 `2/5`，新空间出现，console 无 error/warn。Chrome Extension claim tab 超时，本次点击验证降级为临时 Playwright，不新增项目依赖。
 
 ### Task 8: iOS 空间管理与当前空间录音对齐
 

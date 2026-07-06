@@ -566,3 +566,81 @@ Chrome Extension remote H5:
   Clicked 结合历史 -> 结合历史=active, 本次=inactive
   Console errors/warnings: none
 ```
+
+## 2026-07-07 Swift API Smoke Through Remote Service
+
+Finding:
+
+- `swift run EmotionTalkAPISmoke` against `http://121.41.92.161/api` fails before reaching Nginx with `NSURLErrorDomain -1005`.
+- `curl` against the same URL succeeds, and Nginx logs the curl request.
+- This is a Swift/URLSession cleartext公网 HTTP IP transport issue, not an API business error.
+
+Verification command used:
+
+```bash
+ssh -i ~/.ssh/emotion-talk-h5-20260624210016.pem -f -N -L 18080:127.0.0.1:80 root@121.41.92.161
+EMOTION_TALK_API_BASE_URL=http://127.0.0.1:18080/api swift run EmotionTalkAPISmoke
+```
+
+Observed output:
+
+```text
+recordingStatus=transcribed
+summaryStatus=completed
+adviceStatus=completed
+contextScope=current_only
+eventCount=20
+suggestionCount=3
+```
+
+Conclusion:
+
+- iOS Swift API client can complete the server-side closed loop against the remote service when the transport is local/tunneled.
+- Real iOS remote device acceptance should use an HTTPS domain or a temporary tunnel, not the bare公网 HTTP IP.
+
+## 2026-07-07 H5 Space Management Click Verification
+
+Finding:
+
+- Chrome Extension automation connected once but later timed out while claiming/listing tabs, so this verification used temporary Playwright from npm cache as the fallback browser path. No project dependency was added.
+- The current local and remote H5 builds both expose space management under `我的`.
+- The space API already supports the product rules: default space, create space, set current space, max 5 spaces per owner, and no duplicate names under the same owner.
+
+Verification:
+
+```text
+Local API:
+  GET /users/h5_space_probe/spaces -> auto-created default space
+  POST /spaces 测试空间 -> 200
+  POST /spaces duplicate 测试空间 -> 409
+
+Local H5:
+  http://127.0.0.1:5173 -> 我的 -> 空间管理 -> 创建空间 -> 保存
+  Result: 1/5 changed to 2/5, new space appeared, console error/warn: none
+
+Remote H5:
+  http://121.41.92.161 -> 我的 -> 空间管理 -> 创建空间 -> 保存
+  Result: 1/5 changed to 2/5, new space appeared, console error/warn: none
+```
+
+Observed remote UI state:
+
+```text
+我的
+空间管理
+当前空间决定录音、纪要和专家团建议使用的数据范围。每个用户最多 5 个空间，当前不支持删除。
+当前空间
+家的倾诉空间
+2/5
+远程空间1721
+设置当前空间
+创建空间
+```
+
+Additional verification:
+
+```text
+cd apps/web && npm run type-check -> passed
+cd apps/web && npm run build:h5 -> DONE Build complete
+.venv/bin/python -m unittest services/api/tests/test_deliberation_service.py -> Ran 21 tests, OK
+```
