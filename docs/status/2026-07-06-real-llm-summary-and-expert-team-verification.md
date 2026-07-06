@@ -323,3 +323,62 @@ Remote H5 after sync:
 click 我的 -> 空间管理 / 创建空间 / 当前
 console errors: []
 ```
+
+### Local H5 Space Interaction Regression
+
+User-reported issue:
+
+```text
+H5 controls looked unclickable; space management was not obvious enough.
+```
+
+Root cause found:
+
+- Local H5 did accept bottom-tab clicks.
+- The failing path was `创建空间`: local API on `127.0.0.1:8000` was not running, so H5 entered `服务端未连接` and correctly blocked creation.
+- The old create interaction used `window.prompt`, which is fragile across H5 / app / mini-program targets.
+
+Fix:
+
+- Start local API with current source path: `PYTHONPATH=services/api/src`.
+- Replace `window.prompt` with an in-product inline create form under `我的 -> 空间管理`.
+- Remove the H5 fake `emptySummary` fallback; summary tab now shows real summary or a true empty state.
+
+Verification:
+
+```text
+services/api: Ran 17 tests ... OK
+apps/web: DONE Build complete
+H5 API proxy: GET /api/health -> {"status":"ok"}
+Local API: PID 81714, GET /health -> {"status":"ok"}
+```
+
+Playwright browser verification:
+
+```text
+Flow: http://127.0.0.1:5173 -> 我的 -> 创建空间 -> 保存 -> 切换空间
+Initial rows: 1
+Rows after create: 2
+New row count: 1
+New row has switch action: true
+Top title after switch: QA空间76644
+Subtitle after switch: 2 个空间 · 0 条真实记录
+Console issues: []
+Screenshot: /tmp/emotion_talk_h5_space_qa.png
+```
+
+Remote sync and verification:
+
+```text
+Static H5 deployed to emotion_talk-web-1:/usr/share/nginx/html
+GET http://121.41.92.161/api/health -> {"status":"ok"}
+
+Flow: http://121.41.92.161 -> 我的 -> 创建空间 -> 保存 -> 切换空间
+Initial rows: 1
+Rows after create: 2
+New row has switch action: true
+Top title after switch: 远程空间46295
+Subtitle after switch: 2 个空间 · 0 条真实记录
+Console issues: []
+Screenshot: /tmp/emotion_talk_remote_h5_space_qa.png
+```

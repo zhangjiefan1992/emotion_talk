@@ -62,6 +62,8 @@ const summary = ref<SummaryArtifact>();
 const advice = ref<ExpertAdviceJobResponse>();
 const captureMode = ref<CaptureMode>("none");
 const errorText = ref("");
+const isCreatingSpace = ref(false);
+const newSpaceName = ref("");
 const contextScope: ContextScope = "current_with_history";
 
 let clockTimer: ReturnType<typeof setInterval> | undefined;
@@ -87,7 +89,7 @@ const detailRecord = computed<ConversationRecord>(() => {
     segments: segments.value,
   };
 });
-const visibleSummary = computed(() => summary.value ?? activeRecord.value?.summary ?? emptySummary(detailRecord.value.title));
+const visibleSummary = computed(() => summary.value ?? activeRecord.value?.summary);
 const visibleAdvice = computed(() => advice.value);
 const visibleAdviceEvents = computed(() =>
   (visibleAdvice.value?.events ?? []).filter((event) => event.payload.content && event.round && event.participant),
@@ -260,16 +262,6 @@ function stopBrowserCapture(): Promise<Blob | undefined> {
   });
 }
 
-function emptySummary(title: string): SummaryArtifact {
-  return {
-    status: "idle",
-    title,
-    overview: "录音完成后会在这里生成 AI 纪要。",
-    keyPoints: [],
-    chapters: [],
-  };
-}
-
 function recordFromResponse(record: RecordingResponse): ConversationRecord {
   return {
     localId: record.recordingId,
@@ -312,17 +304,33 @@ async function selectSpace(nextSpaceId: string) {
   bottomTab.value = "space";
 }
 
-async function createSpacePrompt() {
+function beginCreateSpace() {
   if (backendMode.value !== "connected") {
     errorText.value = "服务端未连接，不能创建空间。";
     return;
   }
-  const name = typeof window !== "undefined" ? window.prompt("新空间名称") : "";
-  const clean = name?.trim();
+  if (spaces.value.length >= 5) {
+    errorText.value = "一个用户最多只能创建 5 个空间。";
+    return;
+  }
+  bottomTab.value = "mine";
+  isCreatingSpace.value = true;
+  newSpaceName.value = "";
+}
+
+function cancelCreateSpace() {
+  isCreatingSpace.value = false;
+  newSpaceName.value = "";
+}
+
+async function submitNewSpace() {
+  const clean = newSpaceName.value.trim();
   if (!clean) return;
   try {
     await emotionTalkApi.createSpace(clean, ownerId);
     await loadSpaces();
+    isCreatingSpace.value = false;
+    newSpaceName.value = "";
     bottomTab.value = "mine";
   } catch (error) {
     errorText.value = error instanceof Error ? error.message : "创建空间失败。";
@@ -497,11 +505,18 @@ async function pollAdvice(jobId: string) {
               <text class="small-pill">{{ space.spaceId === spaceId ? "当前" : "切换" }}</text>
             </button>
           </view>
-          <button class="primary" :disabled="spaces.length >= 5" @tap="createSpacePrompt">创建空间</button>
+          <view v-if="isCreatingSpace" class="space-create">
+            <input class="space-input" v-model="newSpaceName" maxlength="20" placeholder="输入空间名称" @confirm="submitNewSpace" />
+            <view class="space-create-actions">
+              <button class="secondary" @tap="cancelCreateSpace">取消</button>
+              <button class="primary compact" @tap="submitNewSpace">保存</button>
+            </view>
+          </view>
+          <button v-else class="primary" :disabled="spaces.length >= 5" @tap="beginCreateSpace">创建空间</button>
         </view>
       </scroll-view>
       <view class="floating-actions">
-        <button class="float-add" @tap="createSpacePrompt">＋</button>
+        <button class="float-add" @tap="beginCreateSpace">＋</button>
         <button class="float-record" @tap="startRecording">
           <view class="mic-bars"><text></text><text></text><text></text><text></text></view>
         </button>
@@ -532,14 +547,17 @@ async function pollAdvice(jobId: string) {
       </view>
       <scroll-view scroll-y class="detail-scroll">
         <view v-if="detailTab === 'summary'" class="summary-card">
-          <text class="section-label">AI 纪要</text>
-          <text class="summary-title">{{ visibleSummary.title }}</text>
-          <text class="paragraph">{{ visibleSummary.overview }}</text>
-          <view v-for="point in visibleSummary.keyPoints" :key="point" class="bullet">{{ point }}</view>
-          <view v-for="chapter in visibleSummary.chapters" :key="chapter.title" class="chapter">
-            <text class="chapter-time">{{ chapter.startTimestamp }}</text>
-            <view><text class="chapter-title">{{ chapter.title }}</text><text class="paragraph">{{ chapter.summary }}</text></view>
+          <view v-if="visibleSummary">
+            <text class="section-label">AI 纪要</text>
+            <text class="summary-title">{{ visibleSummary.title }}</text>
+            <text class="paragraph">{{ visibleSummary.overview }}</text>
+            <view v-for="point in visibleSummary.keyPoints" :key="point" class="bullet">{{ point }}</view>
+            <view v-for="chapter in visibleSummary.chapters" :key="chapter.title" class="chapter">
+              <text class="chapter-time">{{ chapter.startTimestamp }}</text>
+              <view><text class="chapter-title">{{ chapter.title }}</text><text class="paragraph">{{ chapter.summary }}</text></view>
+            </view>
           </view>
+          <view v-else class="empty-line">录音结束并完成 AI 处理后，这里会展示真实纪要。</view>
           <button class="primary" @tap="openAdvice">专家团建议</button>
         </view>
         <view v-else-if="detailTab === 'transcript'" class="transcript">
@@ -1161,6 +1179,21 @@ async function pollAdvice(jobId: string) {
   font-weight: 900;
 }
 
+.compact {
+  width: auto;
+  min-width: 104px;
+  margin-top: 0;
+}
+
+.secondary {
+  min-width: 92px;
+  padding: 14px 18px;
+  border-radius: 999px;
+  color: #334155;
+  background: #eef3fb;
+  font-weight: 860;
+}
+
 .primary[disabled] {
   color: #94a3b8;
   background: #e5e7eb;
@@ -1188,6 +1221,29 @@ async function pollAdvice(jobId: string) {
   border-radius: 16px;
   text-align: left;
   background: #f3f6fb;
+}
+
+.space-create {
+  margin-top: 16px;
+}
+
+.space-input {
+  width: 100%;
+  min-height: 52px;
+  padding: 0 16px;
+  box-sizing: border-box;
+  border-radius: 16px;
+  color: #111827;
+  background: #f3f6fb;
+  font-size: 16px;
+  font-weight: 720;
+}
+
+.space-create-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 12px;
 }
 
 .detail-scroll {

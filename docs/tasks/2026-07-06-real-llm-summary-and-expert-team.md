@@ -197,7 +197,7 @@ Needs human:
 
 ### Task 7: H5 点击可用与空间管理闭环
 
-Status: remote_passed_recording_permission_manual_pending
+Status: local_and_remote_space_inline_create_passed_recording_permission_manual_pending
 
 Files:
 
@@ -236,6 +236,16 @@ Latest verification:
 Needs human:
 
 - H5 麦克风权限仍需要用户在浏览器里授权。
+
+Update 2026-07-06:
+
+- 用户反馈 H5 无法点击时，根因不是 tab 事件失效，而是本地 `127.0.0.1:8000` API 未运行，H5 进入 `服务端未连接` 状态后拦截了创建空间动作。
+- API 必须以仓库源码路径启动：`PYTHONPATH=services/api/src .venv/bin/python -m uvicorn emotion_talk_api.app:app --host 127.0.0.1 --port 8000`。
+- H5 `创建空间` 从浏览器原生 `window.prompt` 改为产品内内联输入框，避免 H5/小程序/App 多端行为不一致。
+- H5 纪要 tab 去掉 `emptySummary` 假兜底；没有真实 AI 纪要时只显示真实空状态。
+- Local Playwright 验证通过：`我的 -> 空间管理 -> 创建空间 -> 输入名称 -> 保存 -> 新空间出现 -> 切换为当前空间`。
+- 验证结果：初始 1 个空间，创建后 2 个空间，新空间有 `切换` 状态，切换后首页标题变为新空间名，控制台无 error/warn。
+- Remote H5 已同步并验证通过：`http://121.41.92.161 -> 我的 -> 创建空间 -> 保存 -> 切换空间`，结果同本地一致。
 
 ### Task 8: iOS 空间管理与当前空间录音对齐
 
