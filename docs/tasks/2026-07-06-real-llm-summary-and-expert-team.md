@@ -227,11 +227,12 @@ cd apps/web && npm run build
 
 Latest verification:
 
-- 服务端单测: `Ran 17 tests ... OK`
+- 服务端单测: `Ran 18 tests ... OK`
 - H5 build: `DONE Build complete`
 - Chrome Extension 验证本地与远程 H5 底部 tab 均可点击。
 - 本地 API 以最新源码重启后，`GET /users/default_user/spaces` 返回 5 个可见空间且当前空间排第一。
 - 远程 API 热更新后，`GET /api/users/default_user/spaces` 从 31 条旧数据收口为 5 个可见空间；新用户默认返回 1 个空间。
+- 新增回归测试确认专家团缺 `DEEPSEEK_API_KEY` 时返回 503，且不会创建 `expertAdviceJobIds`。
 
 Needs human:
 

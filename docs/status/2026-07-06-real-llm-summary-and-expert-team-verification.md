@@ -23,7 +23,7 @@ Command:
 Result:
 
 ```text
-Ran 17 tests in 0.133s
+Ran 18 tests in 0.184s
 OK
 ```
 
@@ -276,7 +276,7 @@ Note:
 ### Current Build Verification
 
 ```text
-services/api: Ran 17 tests ... OK
+services/api: Ran 18 tests ... OK
 apps/web: DONE Build complete
 apps/ios: ** BUILD SUCCEEDED **
 ```
@@ -347,7 +347,7 @@ Fix:
 Verification:
 
 ```text
-services/api: Ran 17 tests ... OK
+services/api: Ran 18 tests ... OK
 apps/web: DONE Build complete
 H5 API proxy: GET /api/health -> {"status":"ok"}
 Local API: PID 81714, GET /health -> {"status":"ok"}
@@ -381,4 +381,21 @@ Top title after switch: 远程空间46295
 Subtitle after switch: 2 个空间 · 0 条真实记录
 Console issues: []
 Screenshot: /tmp/emotion_talk_remote_h5_space_qa.png
+```
+
+## 2026-07-06 LLM Key Failure Regression
+
+Added backend regression coverage:
+
+```text
+POST /recordings/{recording_id}/summary-jobs without DEEPSEEK_API_KEY -> 503
+POST /recordings/{recording_id}/expert-advice-jobs without DEEPSEEK_API_KEY -> 503
+expertAdviceJobIds remains []
+```
+
+Result:
+
+```text
+Ran 18 tests in 0.184s
+OK
 ```

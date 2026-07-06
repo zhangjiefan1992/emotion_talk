@@ -292,6 +292,27 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(response.status_code, 503)
         self.assertIn("DEEPSEEK_API_KEY", response.json()["detail"])
 
+    def test_expert_job_returns_503_when_llm_key_is_missing_without_creating_job(self):
+        with patch.dict(os.environ, {"EMOTION_TALK_LLM_PROVIDER": "deepseek"}, clear=True):
+            app = create_app()
+            client = TestClient(app)
+            space = client.post("/spaces", json={"name": "家庭倾诉空间"}).json()
+            recording = client.post(
+                "/recordings",
+                json={"spaceId": space["spaceId"], "title": "06-13 职业转型与长期规划"},
+            ).json()
+            client.post(
+                f"/recordings/{recording['recordingId']}/transcript",
+                json={"markdown": SAMPLE_MARKDOWN},
+            )
+
+            response = client.post(f"/recordings/{recording['recordingId']}/expert-advice-jobs", json={})
+            stored = client.get(f"/recordings/{recording['recordingId']}").json()
+
+        self.assertEqual(response.status_code, 503)
+        self.assertIn("DEEPSEEK_API_KEY", response.json()["detail"])
+        self.assertEqual(stored["expertAdviceJobIds"], [])
+
     def test_space_management_defaults_limits_names_and_switches_current(self):
         app = create_app(provider=FakeProvider())
         client = TestClient(app)
