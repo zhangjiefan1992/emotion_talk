@@ -229,6 +229,7 @@ cd apps/web && npm run build
 Latest verification:
 
 - 服务端单测: `Ran 18 tests ... OK`
+- 2026-07-07 服务端单测更新: `Ran 21 tests ... OK`，新增覆盖 `00:00` 分钟级时间戳解析、空转写拒绝、非法裁判 JSON 失败。
 - H5 build: `DONE Build complete`
 - Chrome Extension 验证本地与远程 H5 底部 tab 均可点击。
 - 本地 API 以最新源码重启后，`GET /users/default_user/spaces` 返回 5 个可见空间且当前空间排第一。
@@ -237,6 +238,7 @@ Latest verification:
 - 新增回归测试确认裁判输出非法 JSON 时专家团任务进入 `failed`，不会返回假 artifact。
 - 2026-07-07 远程容器确认 `provider=deepseek`、`heuristic_flag=UNSET`、`deepseek_key=SET`。
 - 2026-07-07 远程真实接口 smoke 通过：`summary.modelTrace.runtime=llm_summary`；专家团 job 从 `running` 逐步增长到 20 个 events，最终 `completed`，包含第 1/2/3 轮与裁判 artifact。
+- 2026-07-07 H5 本地 Chrome Extension 验证专家团 tab：运行中展示任务进度和已生成过程事件，完成后展示裁判结论、过程总结和事件时间轴。
 
 Needs human:
 
@@ -251,6 +253,10 @@ Update 2026-07-06:
 - Local Playwright 验证通过：`我的 -> 空间管理 -> 创建空间 -> 输入名称 -> 保存 -> 新空间出现 -> 切换为当前空间`。
 - 验证结果：初始 1 个空间，创建后 2 个空间，新空间有 `切换` 状态，切换后首页标题变为新空间名，控制台无 error/warn。
 - Remote H5 已同步并验证通过：`http://121.41.92.161 -> 我的 -> 创建空间 -> 保存 -> 切换空间`，结果同本地一致。
+- 2026-07-07 远程 H5 再次通过 Codex Chrome Extension 复验：`我的` tab 命中元素为 `data-testid=tab-mine`，点击后显示 `空间管理`，点击 `创建空间` 后显示内联 `输入空间名称`，console 无 error/warn。
+- 2026-07-07 远程 H5 底部四 tab 复验通过：`空间 -> 空间画像`、`记录 -> 最近记录`、`主题 -> 还没有主题`、`我的 -> 空间管理`，console 无 error/warn。
+- 2026-07-07 远程 API 使用临时 owner 验证：默认空间自动创建、默认空间重名返回 409、创建 4 个附加空间后第 6 个返回 409、`POST /users/{owner}/current-space` 可切换当前空间。
+- 2026-07-07 远程 API 验证 `00:00` / `00:18` 分钟级时间戳可解析为 2 段，空转写返回 `422 transcript text is empty`，避免空输入触发 AI 脑补。
 
 ### Task 8: iOS 空间管理与当前空间录音对齐
 

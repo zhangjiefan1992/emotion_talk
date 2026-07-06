@@ -153,7 +153,10 @@ class AudioTranscriptionRequest(BaseModel):
 
 def _transcript_from_request(request: TranscriptSubmitRequest, *, fallback_title: str) -> RecordingTranscript:
     if request.markdown:
-        return parse_markdown_transcript(request.markdown)
+        transcript = parse_markdown_transcript(request.markdown)
+        if not transcript.full_text.strip():
+            raise HTTPException(status_code=422, detail="transcript text is empty")
+        return transcript
     if not request.segments:
         raise HTTPException(status_code=422, detail="markdown or segments is required")
     segments = [
@@ -163,7 +166,10 @@ def _transcript_from_request(request: TranscriptSubmitRequest, *, fallback_title
             text=item.text,
         )
         for item in request.segments
+        if item.text.strip()
     ]
+    if not segments:
+        raise HTTPException(status_code=422, detail="transcript text is empty")
     return RecordingTranscript(
         title=request.title or fallback_title,
         created_at_text=request.created_at_text,

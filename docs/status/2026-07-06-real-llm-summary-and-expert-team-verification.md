@@ -521,3 +521,25 @@ Verification:
 Remote http://121.41.92.161/api/health -> {"status":"ok"}
 Remote container in-memory bad judge smoke -> {"status":"failed","message":"judge output must be valid JSON","overview":""}
 ```
+
+## 2026-07-07 H5 Expert Timeline and Transcript Parser Guard
+
+Fix:
+
+- H5 expert tab now shows task progress and visible expert events while the job is still running.
+- Completed H5 expert tab shows judge conclusion, process summary, and event timeline.
+- Markdown transcript parser now accepts `00:00` minute-second timestamps, not only `00:00:00`.
+- Empty transcript submissions now fail with 422 instead of allowing LLM summary/expert jobs to hallucinate from an empty input.
+
+Verification:
+
+```text
+npm run type-check -> passed
+npm run build:h5 -> DONE Build complete
+.venv/bin/python -m unittest services/api/tests/test_deliberation_service.py -> 21 tests, OK
+Chrome Extension local H5 flow:
+  http://localhost:5174 -> existing real LLM summary record -> Expert tab -> Generate expert advice
+  Running state showed: "讨论中 · 已生成 2 条过程"
+  Completed state showed: "已完成 · 16 条过程", 裁判结论, 过程总结, and event timeline
+  Console errors/warnings: none
+```

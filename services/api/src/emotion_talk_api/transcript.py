@@ -5,7 +5,7 @@ import re
 from .models import RecordingTranscript, TranscriptSegment
 
 
-_SPEAKER_LINE = re.compile(r"^(.+?)\s+(\d{2}:\d{2}:\d{2})$")
+_SPEAKER_LINE = re.compile(r"^(.+?)\s+(\d{2}:\d{2}(?::\d{2})?)$")
 
 
 def _clean(line: str) -> str:
@@ -80,4 +80,3 @@ def parse_markdown_transcript(markdown: str) -> RecordingTranscript:
         segments=segments,
         full_text=full_text,
     )
-

@@ -6,6 +6,7 @@ import { formatDuration } from "../../sampleData";
 import type {
   ContextScope,
   ConversationRecord,
+  DeliberationEvent,
   ExpertAdviceJobResponse,
   RecordingResponse,
   RecordingStatus,
@@ -92,8 +93,19 @@ const detailRecord = computed<ConversationRecord>(() => {
 const visibleSummary = computed(() => summary.value ?? activeRecord.value?.summary);
 const visibleAdvice = computed(() => advice.value);
 const visibleAdviceEvents = computed(() =>
-  (visibleAdvice.value?.events ?? []).filter((event) => event.payload.content && event.round && event.participant),
+  (visibleAdvice.value?.events ?? []).filter((event) => isVisibleAdviceEvent(event) && eventText(event)),
 );
+const visibleAdviceProgressText = computed(() => {
+  const current = visibleAdvice.value;
+  if (!current) return "";
+  if (current.status === "running") return `讨论中 · 已生成 ${visibleAdviceEvents.value.length} 条过程`;
+  if (current.status === "completed") return `已完成 · ${visibleAdviceEvents.value.length} 条过程`;
+  return "生成失败";
+});
+const adviceFailureMessage = computed(() => {
+  const events = visibleAdvice.value?.events ?? [];
+  return events[events.length - 1]?.payload.message || "专家团生成失败。";
+});
 const backendText = computed(() => (backendMode.value === "connected" ? "服务端已连接" : backendMode.value === "offline" ? "服务端未连接" : "连接中"));
 const spaceSubtitle = computed(() => `${spaces.value.length || 1} 个空间 · ${records.value.length} 条真实记录`);
 const portraitStatusText = computed(() => (records.value.length ? "基于真实记录" : "等待录音"));
@@ -340,6 +352,30 @@ async function submitNewSpace() {
   } catch (error) {
     errorText.value = error instanceof Error ? error.message : "创建空间失败。";
   }
+}
+
+function eventTitle(event: DeliberationEvent) {
+  if (event.round) return `第 ${event.round} 轮 · ${participantNames[event.participant || ""] || event.participant || event.payload.title || "过程"}`;
+  if (event.type === "safety_precheck_passed" || event.type === "safety_review_passed") return "安全边界";
+  if (event.type === "judge_synthesis_started") return "裁判收敛";
+  if (event.type === "job_failed") return "任务失败";
+  if (event.type === "job_completed") return "任务完成";
+  return event.payload.title || "过程";
+}
+
+function isVisibleAdviceEvent(event: DeliberationEvent) {
+  return Boolean(
+    event.round ||
+      event.type === "safety_precheck_passed" ||
+      event.type === "safety_review_passed" ||
+      event.type === "judge_synthesis_started" ||
+      event.type === "job_failed" ||
+      event.type === "job_completed",
+  );
+}
+
+function eventText(event: DeliberationEvent) {
+  return event.payload.content || event.payload.title || event.payload.message || event.payload.reason || event.payload.status || "";
 }
 
 async function startRecording() {
@@ -607,20 +643,32 @@ async function pollAdvice(jobId: string) {
         </view>
         <view v-else class="summary-card">
           <button v-if="!visibleAdvice" class="primary" @tap="openAdvice">生成专家团建议</button>
-          <view v-else-if="visibleAdvice.status === 'running'" class="empty-line">专家团讨论中，请稍等。</view>
-          <view v-else-if="visibleAdvice.status === 'completed'">
-            <text class="section-label">裁判结论</text>
-            <text class="summary-title">{{ visibleAdvice.artifact.overview }}</text>
-            <view v-for="suggestion in visibleAdvice.artifact.suggestions" :key="suggestion.title" class="advice">
-              <text class="chapter-title">{{ suggestion.title }}</text>
-              <text class="paragraph">{{ suggestion.body }}</text>
+          <view v-else>
+            <text class="section-label">任务进度</text>
+            <text class="summary-title">{{ visibleAdviceProgressText }}</text>
+            <view class="context-line">
+              <text>上下文 {{ visibleAdvice.contextUsage.scope || "current_only" }}</text>
+              <text>历史 {{ visibleAdvice.contextUsage.historyCount }}</text>
             </view>
+            <view v-if="visibleAdvice.status === 'completed'">
+              <text class="section-label">裁判结论</text>
+              <text class="summary-title">{{ visibleAdvice.artifact.overview }}</text>
+              <view v-for="suggestion in visibleAdvice.artifact.suggestions" :key="suggestion.title" class="advice">
+                <text class="chapter-title">{{ suggestion.title }}</text>
+                <text class="paragraph">{{ suggestion.body }}</text>
+              </view>
+              <view v-for="item in visibleAdvice.artifact.processSummary" :key="`${item.round}-${item.title}`" class="event">
+                <text class="speaker">过程总结 · {{ item.title }}</text>
+                <text class="segment-text">{{ item.summary }}</text>
+              </view>
+            </view>
+            <view v-else-if="visibleAdvice.status === 'running'" class="empty-line">专家团正在多轮讨论，可以先看下面已经产生的过程。</view>
+            <view v-else class="error-card">{{ adviceFailureMessage }}</view>
             <view v-for="event in visibleAdviceEvents" :key="event.eventId" class="event">
-              <text class="speaker">第 {{ event.round }} 轮 · {{ participantNames[event.participant || ''] || event.participant }}</text>
-              <text class="segment-text">{{ event.payload.content }}</text>
+              <text class="speaker">{{ eventTitle(event) }}</text>
+              <text class="segment-text">{{ eventText(event) }}</text>
             </view>
           </view>
-          <view v-else class="error-card">专家团生成失败。</view>
         </view>
       </scroll-view>
     </view>
@@ -638,8 +686,8 @@ async function pollAdvice(jobId: string) {
         </view>
         <view class="timeline">
           <view v-for="event in visibleAdviceEvents" :key="event.eventId" class="event">
-            <text class="speaker">第 {{ event.round }} 轮 · {{ participantNames[event.participant || ''] || event.participant }}</text>
-            <text class="segment-text">{{ event.payload.content }}</text>
+            <text class="speaker">{{ eventTitle(event) }}</text>
+            <text class="segment-text">{{ eventText(event) }}</text>
           </view>
         </view>
       </scroll-view>
@@ -913,6 +961,16 @@ async function pollAdvice(jobId: string) {
   font-size: 12px;
   font-weight: 680;
   white-space: nowrap;
+}
+
+.context-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 10px 0 16px;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 650;
 }
 
 .portrait-grid {

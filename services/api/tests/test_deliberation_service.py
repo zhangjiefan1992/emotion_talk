@@ -154,6 +154,29 @@ class TranscriptParsingTest(unittest.TestCase):
         self.assertIn("B1 的培训", transcript.full_text)
         self.assertIn("暑期班", transcript.full_text)
 
+    def test_parses_minute_second_timestamps(self):
+        transcript = parse_markdown_transcript(
+            """# 07-07 专家团过程验收
+
+> 创建时间: 2026-07-07 15:30
+
+> 转写时长: 01分12秒
+
+## 转文字
+
+我 00:00
+
+我最近对职业方向有点卡住。
+
+伴侣 00:18
+
+我们先把现在最消耗你的事情说出来。
+"""
+        )
+
+        self.assertEqual(len(transcript.segments), 2)
+        self.assertIn("职业方向", transcript.full_text)
+
 
 class DeliberationServiceTest(unittest.TestCase):
     def test_generates_completed_job_with_events_and_artifact(self):
@@ -299,6 +322,23 @@ class ApiTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 503)
         self.assertIn("DEEPSEEK_API_KEY", response.json()["detail"])
+
+    def test_submit_transcript_rejects_empty_markdown_text(self):
+        app = create_app(provider=FakeProvider())
+        client = TestClient(app)
+        space = client.post("/spaces", json={"name": "家庭倾诉空间"}).json()
+        recording = client.post(
+            "/recordings",
+            json={"spaceId": space["spaceId"], "title": "空转写"},
+        ).json()
+
+        response = client.post(
+            f"/recordings/{recording['recordingId']}/transcript",
+            json={"markdown": "# 空转写\n\n## 转文字\n"},
+        )
+
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(response.json()["detail"], "transcript text is empty")
 
     def test_expert_job_returns_503_when_llm_key_is_missing_without_creating_job(self):
         with patch.dict(os.environ, {"EMOTION_TALK_LLM_PROVIDER": "deepseek"}, clear=True):
