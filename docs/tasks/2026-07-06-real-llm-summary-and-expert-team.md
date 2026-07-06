@@ -108,6 +108,7 @@ Done when:
 - 服务端后台逐步写入事件：创建、上下文冻结、第一轮、第二轮、第三轮、裁判收敛、完成。
 - `GET /expert-advice-jobs/{job_id}` 可看到中间态和最终态。
 - 失败时 `status=failed`，事件里有失败原因，不返回假建议。
+- 裁判 LLM 输出非法 JSON 时任务必须 `failed`，不能把原文包装成 artifact。
 
 Verify:
 
@@ -233,6 +234,7 @@ Latest verification:
 - 本地 API 以最新源码重启后，`GET /users/default_user/spaces` 返回 5 个可见空间且当前空间排第一。
 - 远程 API 热更新后，`GET /api/users/default_user/spaces` 从 31 条旧数据收口为 5 个可见空间；新用户默认返回 1 个空间。
 - 新增回归测试确认专家团缺 `DEEPSEEK_API_KEY` 时返回 503，且不会创建 `expertAdviceJobIds`。
+- 新增回归测试确认裁判输出非法 JSON 时专家团任务进入 `failed`，不会返回假 artifact。
 - 2026-07-07 远程容器确认 `provider=deepseek`、`heuristic_flag=UNSET`、`deepseek_key=SET`。
 - 2026-07-07 远程真实接口 smoke 通过：`summary.modelTrace.runtime=llm_summary`；专家团 job 从 `running` 逐步增长到 20 个 events，最终 `completed`，包含第 1/2/3 轮与裁判 artifact。
 

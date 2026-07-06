@@ -370,14 +370,8 @@ JSON schema:
             cleaned = fence_match.group(1).strip()
         try:
             data = json.loads(cleaned)
-        except json.JSONDecodeError:
-            data = {
-                "overview": cleaned,
-                "processSummary": [],
-                "suggestions": [],
-                "keyUncertainties": ["裁判输出不是合法 JSON，需要重新生成。"],
-                "safetyBoundary": "这不是医疗、心理治疗或职业承诺。",
-            }
+        except json.JSONDecodeError as exc:
+            raise ValueError("judge output must be valid JSON") from exc
         return DeliberationArtifact(
             overview=str(data.get("overview", "")).strip(),
             process_summary=[

@@ -506,3 +506,18 @@ Verification:
 swift test -> 5 tests, 0 failures
 xcodebuild -project EmotionTalk.xcodeproj -scheme EmotionTalk -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build -> BUILD SUCCEEDED
 ```
+
+## 2026-07-07 Expert Judge Failure Guard
+
+Fix:
+
+- Expert-team judge output must be valid JSON.
+- Invalid judge output now fails the job through the existing `status=failed` path instead of being wrapped into a fake completed artifact.
+
+Verification:
+
+```text
+.venv/bin/python -m unittest services/api/tests/test_deliberation_service.py -> 19 tests, OK
+Remote http://121.41.92.161/api/health -> {"status":"ok"}
+Remote container in-memory bad judge smoke -> {"status":"failed","message":"judge output must be valid JSON","overview":""}
+```

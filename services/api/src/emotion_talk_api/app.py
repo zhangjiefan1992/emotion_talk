@@ -10,6 +10,7 @@ import tempfile
 import time
 import urllib.request
 import uuid
+from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -600,19 +601,22 @@ def _run_expert_advice_job(
     except Exception as exc:
         with jobs_lock:
             job = jobs[job_id]
-            job.status = "failed"
             seq = (job.events[-1].seq if job.events else 0) + 1
-            job.events.append(
-                DeliberationEvent(
-                    event_id=f"evt_{seq:04d}",
-                    job_id=job_id,
-                    seq=seq,
-                    type="job_failed",
-                    visibility="user_visible",
-                    payload={"message": str(exc)},
-                )
+            failure_event = DeliberationEvent(
+                event_id=f"evt_{seq:04d}",
+                job_id=job_id,
+                seq=seq,
+                type="job_failed",
+                visibility="user_visible",
+                payload={"message": str(exc)},
             )
-            store.save_job(job)
+            failed_job = replace(
+                job,
+                status="failed",
+                events=[*job.events, failure_event],
+            )
+            jobs[job_id] = failed_job
+            store.save_job(failed_job)
 
 
 def _clean_owner_id(owner_id: str) -> str:

@@ -133,6 +133,14 @@ class FakeProvider:
         raise AssertionError(f"unexpected purpose: {purpose}")
 
 
+class BadJudgeProvider(FakeProvider):
+    def complete(self, prompt: str, *, purpose: str) -> str:
+        if purpose == "judge":
+            self.calls.append((purpose, prompt))
+            return "这不是 JSON"
+        return super().complete(prompt, purpose=purpose)
+
+
 class TranscriptParsingTest(unittest.TestCase):
     def test_parses_dingtalk_style_markdown_transcript(self):
         transcript = parse_markdown_transcript(SAMPLE_MARKDOWN)
@@ -440,6 +448,26 @@ class ApiTest(unittest.TestCase):
 
         self.assertGreaterEqual(len(events), 10)
         self.assertEqual(artifact["suggestions"][0]["title"], "把七月定义为语言恢复冲刺月")
+
+    def test_expert_job_fails_when_judge_returns_invalid_json(self):
+        app = create_app(provider=BadJudgeProvider())
+        client = TestClient(app)
+        space = client.post("/spaces", json={"name": "家庭倾诉空间"}).json()
+        recording = client.post(
+            "/recordings",
+            json={"spaceId": space["spaceId"], "title": "06-13 职业转型与长期规划"},
+        ).json()
+        client.post(
+            f"/recordings/{recording['recordingId']}/transcript",
+            json={"markdown": SAMPLE_MARKDOWN},
+        )
+
+        created = client.post(f"/recordings/{recording['recordingId']}/expert-advice-jobs", json={}).json()
+        job = wait_for_job(client, created["jobId"])
+
+        self.assertEqual(job["status"], "failed")
+        self.assertEqual(job["artifact"]["overview"], "")
+        self.assertIn("judge output must be valid JSON", job["events"][-1]["payload"]["message"])
 
     def test_sqlite_storage_survives_app_restart(self):
         with tempfile.TemporaryDirectory() as tmp_dir:

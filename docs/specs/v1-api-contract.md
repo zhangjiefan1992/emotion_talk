@@ -108,7 +108,13 @@ POST /recordings/{recording_id}/transcript
 POST /recordings/{recording_id}/summary-jobs
 ```
 
-当前实现是 `dev_summary_stub`，用于稳定接口形状；后续替换为 LLM summary worker。
+当前实现会调用服务端配置的 LLM provider，输出“总-过程-总”结构：
+
+- `overview`: 第一个总。
+- `chapters`: 过程分段。
+- `keyPoints`: 末尾收敛要点。
+
+生产/验收默认 provider 是 `deepseek`。缺少 `DEEPSEEK_API_KEY` 时接口返回 503；LLM 返回非 JSON 或结构缺失时返回 502，不写入假纪要。
 
 ### Expert Advice Job
 
@@ -207,6 +213,8 @@ GET  /expert-advice-jobs/{job_id}/artifact
 - 默认 app 使用 SQLite 仓库，适合本地研发、H5 验证和单机 Docker 部署。
 - 单元测试默认仍使用内存仓库，避免测试相互污染。
 - ASR 临时凭证和 OSS 上传授权是 dev stub。
-- Summary 是 dev stub。
-- Expert Advice 已经是真实多轮专家团状态机，可使用 DeepSeek provider 或 heuristic provider。
-- 下一步替换内存仓库为数据库，替换 dev stub 为真实 Bailian/DashScope 与 OSS 适配器。
+- Summary 已经是真实 LLM job，`modelTrace.runtime=llm_summary`。
+- Expert Advice 已经是真实异步多轮专家团任务：创建 job 后后台逐步写入 events，裁判输出合法 JSON 后才完成 artifact。
+- `heuristic` 仅允许本地 wiring 测试显式设置 `EMOTION_TALK_ALLOW_HEURISTIC=true`，生产/验收不得静默启用。
+- 裁判输出不是合法 JSON 时，专家团任务必须进入 `failed`，不能包装成假建议。
+- 下一步替换 ASR 临时凭证和 OSS 上传授权 dev stub 为真实 Bailian/DashScope 与 OSS 适配器。
