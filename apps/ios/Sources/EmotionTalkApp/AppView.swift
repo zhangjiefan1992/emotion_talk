@@ -84,6 +84,25 @@ private struct MySpacesView: View {
 
     var body: some View {
         List {
+            if let currentSpace = spaceStore.currentSpace {
+                Section("当前空间") {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(currentSpace.name)
+                                .font(.headline)
+                            Text("当前空间决定录音、纪要和专家团建议使用的数据范围。")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Text("\(spaceStore.spaces.count)/5")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                    .accessibilityIdentifier("currentSpaceCard")
+                }
+            }
+
             Section("空间管理") {
                 ForEach(spaceStore.spaces) { space in
                     Button {
@@ -97,22 +116,29 @@ private struct MySpacesView: View {
                                     .foregroundStyle(.secondary)
                             }
                             Spacer()
-                            Text(space.spaceId == spaceStore.currentSpaceId ? "当前" : "切换")
+                            Text(space.spaceId == spaceStore.currentSpaceId ? "当前空间" : "设置当前空间")
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(space.spaceId == spaceStore.currentSpaceId ? .blue : .secondary)
                         }
                     }
+                    .accessibilityIdentifier(space.spaceId == spaceStore.currentSpaceId ? "currentSpaceRow" : "setCurrentSpaceButton")
                 }
             }
 
-            Section("创建空间") {
+            Section {
                 TextField("新空间名称", text: $newSpaceName)
-                Button("创建") {
+                    .accessibilityIdentifier("newSpaceNameField")
+                Button("创建空间") {
                     let name = newSpaceName
                     newSpaceName = ""
                     Task { await spaceStore.createSpace(api: api, name: name) }
                 }
                 .disabled(spaceStore.spaces.count >= 5 || newSpaceName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .accessibilityIdentifier("createSpaceButton")
+            } header: {
+                Text("创建空间")
+            } footer: {
+                Text("每个用户最多 5 个空间，当前不支持删除。")
             }
 
             if let error = spaceStore.errorMessage {
@@ -161,6 +187,14 @@ final class SpaceStore {
     func createSpace(api: any EmotionTalkAPI, name: String) async {
         let clean = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !clean.isEmpty else { return }
+        if spaces.count >= 5 {
+            errorMessage = "一个用户最多只能创建 5 个空间。"
+            return
+        }
+        if spaces.contains(where: { $0.name.trimmingCharacters(in: .whitespacesAndNewlines).localizedCaseInsensitiveCompare(clean) == .orderedSame }) {
+            errorMessage = "同一个用户下的空间不可重名。"
+            return
+        }
         do {
             _ = try await api.createSpace(name: clean, ownerId: ownerId)
             await load(api: api)

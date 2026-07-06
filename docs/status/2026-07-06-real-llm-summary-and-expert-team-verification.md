@@ -490,3 +490,19 @@ Current space switched: true
 Console issues: none
 Screenshots: /tmp/emotion-talk-h5-space-qa/remote-*.png
 ```
+
+## 2026-07-07 iOS Space Management Alignment
+
+Fix:
+
+- `我的` tab now explicitly shows current space, `n/5` quota, and the data scope explanation.
+- Space rows use `当前空间` / `设置当前空间`, matching the H5 product wording.
+- Creating a space uses `创建空间` wording and keeps the same max-5/no-delete boundary visible.
+- `SpaceStore.createSpace` rejects duplicate names before calling the API; the server remains the source of truth.
+
+Verification:
+
+```text
+swift test -> 5 tests, 0 failures
+xcodebuild -project EmotionTalk.xcodeproj -scheme EmotionTalk -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build -> BUILD SUCCEEDED
+```

@@ -29,7 +29,7 @@ let package = Package(
         ),
         .testTarget(
             name: "EmotionTalkAppTests",
-            dependencies: ["EmotionTalkApp"]
+            dependencies: ["EmotionTalkApp", "EmotionTalkCore"]
         )
     ]
 )
