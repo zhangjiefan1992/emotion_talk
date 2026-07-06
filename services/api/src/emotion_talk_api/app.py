@@ -312,10 +312,11 @@ def create_app(
     def list_user_spaces(owner_id: str) -> dict[str, Any]:
         owner_id = _clean_owner_id(owner_id)
         current = _ensure_default_space(spaces, owner_id=owner_id, store=store)
+        visible_spaces = _visible_owner_spaces(spaces, owner_id)
         return {
             "ownerId": owner_id,
             "currentSpaceId": current["spaceId"],
-            "spaces": [_space_public(space, owner_id=owner_id) for space in _sorted_owner_spaces(spaces, owner_id)],
+            "spaces": [_space_public(space, owner_id=owner_id) for space in visible_spaces],
         }
 
     @app.post("/users/{owner_id}/current-space")
@@ -330,7 +331,7 @@ def create_app(
         return {
             "ownerId": owner_id,
             "currentSpaceId": request.space_id,
-            "spaces": [_space_public(space, owner_id=owner_id) for space in _sorted_owner_spaces(spaces, owner_id)],
+            "spaces": [_space_public(space, owner_id=owner_id) for space in _visible_owner_spaces(spaces, owner_id)],
         }
 
     @app.get("/spaces/{space_id}")
@@ -639,6 +640,26 @@ def _sorted_owner_spaces(spaces: dict[str, dict[str, Any]], owner_id: str) -> li
     return items
 
 
+def _visible_owner_spaces(spaces: dict[str, dict[str, Any]], owner_id: str) -> list[dict[str, Any]]:
+    """Return the product-visible space set, hiding legacy duplicated rows."""
+    current = next((space for space in _owner_spaces(spaces, owner_id) if space.get("isCurrent")), None)
+    candidates = _sorted_owner_spaces(spaces, owner_id)
+    if current:
+        candidates = [current, *[space for space in candidates if space["spaceId"] != current["spaceId"]]]
+
+    visible: list[dict[str, Any]] = []
+    names: set[str] = set()
+    for space in candidates:
+        normalized = str(space.get("name", "")).casefold()
+        if normalized in names:
+            continue
+        visible.append(space)
+        names.add(normalized)
+        if len(visible) >= MAX_SPACES_PER_OWNER:
+            break
+    return visible
+
+
 def _space_public(space: dict[str, Any], *, owner_id: str | None = None) -> dict[str, Any]:
     return {
         "spaceId": space["spaceId"],
@@ -651,7 +672,7 @@ def _space_public(space: dict[str, Any], *, owner_id: str | None = None) -> dict
 
 def _assert_can_create_space(spaces: dict[str, dict[str, Any]], *, owner_id: str, name: str) -> None:
     owner_spaces = _owner_spaces(spaces, owner_id)
-    if len(owner_spaces) >= MAX_SPACES_PER_OWNER:
+    if len(_visible_owner_spaces(spaces, owner_id)) >= MAX_SPACES_PER_OWNER:
         raise HTTPException(status_code=409, detail="a user can have at most 5 spaces")
     normalized = name.casefold()
     if any(str(space.get("name", "")).casefold() == normalized for space in owner_spaces):

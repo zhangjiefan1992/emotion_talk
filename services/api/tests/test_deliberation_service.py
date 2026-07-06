@@ -316,6 +316,30 @@ class ApiTest(unittest.TestCase):
         current = [space for space in switched["spaces"] if space["isCurrent"]]
         self.assertEqual([space["spaceId"] for space in current], [created_ids[-1]])
 
+    def test_space_list_hides_legacy_duplicates_and_caps_visible_spaces(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = SQLiteStorage(Path(tmp) / "emotion_talk.sqlite3")
+            for index, name in enumerate(["家", "家", "工作", "成长", "健康", "财务", "朋友"]):
+                storage.save_space(
+                    {
+                        "spaceId": f"legacy_{index}",
+                        "ownerId": "legacy_user",
+                        "name": name,
+                        "isCurrent": index == 5,
+                        "createdAt": f"2026-07-06T00:0{index}:00+00:00",
+                    }
+                )
+            app = create_app(provider=FakeProvider(), storage=storage)
+            client = TestClient(app)
+
+            listed = client.get("/users/legacy_user/spaces").json()
+
+        names = [space["name"] for space in listed["spaces"]]
+        self.assertLessEqual(len(names), 5)
+        self.assertEqual(len(names), len(set(names)))
+        self.assertEqual(listed["currentSpaceId"], "legacy_5")
+        self.assertEqual(listed["spaces"][0]["spaceId"], "legacy_5")
+
     def test_lists_recordings_by_space(self):
         app = create_app(provider=FakeProvider())
         client = TestClient(app)

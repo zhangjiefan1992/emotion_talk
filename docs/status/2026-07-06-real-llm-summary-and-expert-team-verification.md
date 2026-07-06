@@ -1,7 +1,7 @@
 # Real LLM Summary and Expert Team Verification
 
 Date: 2026-07-06
-Status: backend_remote_passed_client_manual_pending
+Status: h5_local_remote_passed_ios_build_passed_client_manual_pending
 
 ## Scope
 
@@ -23,7 +23,7 @@ Command:
 Result:
 
 ```text
-Ran 16 tests in 0.152s
+Ran 17 tests in 0.133s
 OK
 ```
 
@@ -122,6 +122,7 @@ has_纪要=yes has_转写=yes has_专家团=yes has_running=yes has_api=yes
 - iOS 真机还需要用户再次人工验收录音、结束、三个 tab 展示。
 - H5 页面入口、底部点击、空间管理入口已通过 Chrome 验证；录音能力仍取决于浏览器麦克风权限和协议环境。
 - 远程容器已热更新并通过接口验证，但 Docker Hub 拉取基础镜像超时，正式镜像 rebuild 尚未成功。若后续执行 `docker compose up --force-recreate --build`，需要先完成镜像 rebuild。
+- 本地 API 必须以 `PYTHONPATH=services/api/src` 启动；否则会加载旧安装包并导致空间接口 404。
 
 ## 2026-07-06 H5 Clickability And Space Management Addendum
 
@@ -216,3 +217,66 @@ console errors: []
 - 同一用户最多 5 个空间。
 - 同一用户下空间不可重名。
 - iOS 开始录音时使用当前空间，不再每次创建默认空间。
+
+## 2026-07-06 Space List Normalization And Local H5 Retest
+
+### Root Cause
+
+本地 H5 “能点但空间数据不对”的根因不是前端点击失效，而是本地 `uvicorn emotion_talk_api.app:app` 进程加载了虚拟环境里的旧安装包，没有走当前源码目录 `services/api/src`，导致：
+
+```text
+GET /users/default_user/spaces -> 404
+```
+
+正确启动方式：
+
+```bash
+PYTHONPATH=services/api/src \
+EMOTION_TALK_LLM_PROVIDER=deepseek \
+.venv/bin/python -m uvicorn emotion_talk_api.app:app --host 127.0.0.1 --port 8000
+```
+
+### API Rule Verification
+
+After restarting local API from current source:
+
+```text
+GET /users/default_user/spaces
+count: 5
+currentFirst: true
+names: Swift 联调空间 / 默认倾诉空间 / 本地验收空间 / 家的倾诉空间 / test
+```
+
+The API now normalizes legacy polluted data at the response boundary:
+
+- At most 5 visible spaces per user.
+- Duplicate legacy space names are hidden from the product response.
+- Current space is kept visible and sorted first.
+- New creation still rejects duplicate names and rejects creation once 5 visible spaces exist.
+
+### Local And Remote H5 Click Verification
+
+Observed via Codex Chrome Extension:
+
+```text
+remote http://121.41.92.161/
+click 我的 -> 空间管理 / 创建空间 / 当前
+console errors: []
+
+local http://localhost:5173/
+click 我的 -> 空间管理 / 创建空间
+console errors: []
+```
+
+Note:
+
+- H5 uses browser-local `emotion_talk_owner_id`, not `default_user`; a fresh browser user correctly receives one default space.
+- `default_user` data is mainly legacy smoke-test data and is now normalized before being returned.
+
+### Current Build Verification
+
+```text
+services/api: Ran 17 tests ... OK
+apps/web: DONE Build complete
+apps/ios: ** BUILD SUCCEEDED **
+```

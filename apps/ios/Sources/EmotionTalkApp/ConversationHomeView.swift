@@ -12,7 +12,11 @@ struct ConversationHomeView: View {
                 switch session.phase {
                 case .idle:
                     if let currentSpace = spaceStore.currentSpace {
-                        IdleConversationView(spaceName: currentSpace.name) {
+                        IdleConversationView(
+                            spaceCount: spaceStore.spaces.count,
+                            recordCount: spaceStore.records.count,
+                            records: Array(spaceStore.records.prefix(3))
+                        ) {
                             Task {
                                 await session.start(api: api, space: currentSpace, options: AppConfiguration.startOptions)
                             }
@@ -60,40 +64,109 @@ struct ConversationHomeView: View {
                 }
             }
             .padding(20)
+            .padding(.bottom, 96)
         }
         .background(Color.appGroupedBackground)
-        .navigationTitle("倾诉")
+        .navigationTitle(spaceStore.currentSpace?.name ?? "倾诉")
     }
 }
 
 private struct IdleConversationView: View {
-    let spaceName: String
+    let spaceCount: Int
+    let recordCount: Int
+    let records: [RecordingResponse]
     let onStart: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("开始对话")
-                    .font(.largeTitle.bold())
-                Text("录音、实时转写、自动纪要和专家团建议会围绕同一次记录沉淀。")
-                    .font(.body)
+        VStack(alignment: .leading, spacing: 18) {
+            HStack {
+                Text("\(max(spaceCount, 1)) 个空间 · \(recordCount) 条真实记录")
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
+                Spacer()
             }
 
             HStack(spacing: 10) {
-                Image(systemName: "house")
-                    .foregroundStyle(.blue)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("当前空间")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Text(spaceName)
-                        .font(.subheadline.weight(.semibold))
-                }
+                Image(systemName: "magnifyingglass")
+                Text("搜索记录、原话、主题")
                 Spacer()
             }
-            .padding(14)
-            .background(Color.appSecondaryGroupedBackground, in: RoundedRectangle(cornerRadius: 8))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(Color.appSecondaryGroupedBackground, in: Capsule())
+
+            VStack(alignment: .leading, spacing: 14) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("空间画像")
+                            .font(.headline)
+                        Text("只基于真实转写和纪要生成")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Text(recordCount > 0 ? "基于真实记录" : "等待录音")
+                        .font(.caption.weight(.semibold))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color.appSecondaryGroupedBackground, in: Capsule())
+                }
+
+                if recordCount == 0 {
+                    Text("完成第一次真实录音后，空间画像会从转写和纪要中生成。")
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                } else {
+                    HStack(spacing: 12) {
+                        MetricTile(value: "\(recordCount)", label: "真实记录")
+                        MetricTile(value: "待生成", label: "反复主题")
+                    }
+                }
+            }
+            .padding(20)
+            .background(.background, in: RoundedRectangle(cornerRadius: 8))
+
+            VStack(alignment: .leading, spacing: 14) {
+                HStack {
+                    Text("最近记录")
+                        .font(.title2.bold())
+                    Spacer()
+                    Label("筛选", systemImage: "line.3.horizontal.decrease")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+
+                HStack(spacing: 22) {
+                    Text("最近").fontWeight(.semibold)
+                    Text("我的")
+                    Text("共享")
+                    Text("收藏")
+                }
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+                if records.isEmpty {
+                    Text("还没有真实记录。点击下方按钮开始第一次倾诉。")
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(records) { record in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(record.title)
+                                .font(.headline)
+                            Text(record.transcript?.durationText ?? record.status)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(14)
+                        .background(Color.appSecondaryGroupedBackground, in: RoundedRectangle(cornerRadius: 8))
+                    }
+                }
+            }
+            .padding(20)
+            .background(.background, in: RoundedRectangle(cornerRadius: 8))
 
             Button(action: onStart) {
                 Label("开始", systemImage: "mic.fill")
@@ -109,10 +182,28 @@ private struct IdleConversationView: View {
                 CapabilityRow(symbol: "doc.text", title: "自动纪要", value: "结束后生成")
                 CapabilityRow(symbol: "person.3", title: "专家团", value: "用户主动触发")
             }
+            .padding(20)
+            .background(.background, in: RoundedRectangle(cornerRadius: 8))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(20)
-        .background(.background, in: RoundedRectangle(cornerRadius: 8))
+    }
+}
+
+private struct MetricTile: View {
+    let value: String
+    let label: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(value)
+                .font(.title.bold())
+            Text(label)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(Color.appSecondaryGroupedBackground, in: RoundedRectangle(cornerRadius: 8))
     }
 }
 

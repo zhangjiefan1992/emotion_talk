@@ -1,7 +1,7 @@
 # Real LLM Summary and Expert Team Task List
 
 Date: 2026-07-06
-Status: h5_remote_passed_ios_build_passed_client_manual_pending
+Status: h5_local_remote_passed_ios_build_passed_client_manual_pending
 
 ## Goal
 
@@ -17,7 +17,7 @@ Status: h5_remote_passed_ios_build_passed_client_manual_pending
 
 - `GET /health`: 服务健康检查。
 - `POST /spaces`: 创建倾诉空间。
-- `GET /users/{owner_id}/spaces`: 获取用户空间列表，并自动确保默认空间。
+- `GET /users/{owner_id}/spaces`: 获取用户空间列表，并自动确保默认空间；返回边界会隐藏旧脏数据中的同名空间并最多展示 5 个。
 - `POST /users/{owner_id}/current-space`: 切换当前空间。
 - `GET /spaces/{space_id}/recordings`: 获取当前空间下的记录列表。
 - `POST /recordings`: 创建录音记录。
@@ -33,6 +33,7 @@ Status: h5_remote_passed_ios_build_passed_client_manual_pending
 - iOS 真机完整链路还需要用户再次点击录音、结束、查看 `纪要 / 转写 / 专家团`。
 - H5 录音链路仍受浏览器录音权限和部署协议影响，需要单独验证。
 - 远程服务器当前使用热更新容器完成验证；Docker Hub 超时导致镜像 rebuild 暂未完成。
+- 本地 API 必须使用 `PYTHONPATH=services/api/src` 启动；否则会加载虚拟环境里的旧安装包，导致空间接口 404。
 
 ## Tasks
 
@@ -212,8 +213,8 @@ Done when:
 - 每个用户默认有一个空间。
 - `我的` 里可以查看空间、创建空间、切换当前空间。
 - 当前不支持删除空间。
-- 同一用户最多 5 个空间。
-- 同一用户下空间不可重名。
+- 同一用户最多 5 个可见空间；旧测试数据超过 5 个时，服务端返回边界会规范化为最多 5 个。
+- 同一用户下空间不可重名；旧测试数据同名时，服务端返回边界只展示一个。
 - 切换空间后，首页记录列表显示当前空间的记录。
 
 Verify:
@@ -224,13 +225,20 @@ cd /Users/jeff/Documents/emotion_talk
 cd apps/web && npm run build
 ```
 
+Latest verification:
+
+- 服务端单测: `Ran 17 tests ... OK`
+- H5 build: `DONE Build complete`
+- Chrome Extension 验证本地与远程 H5 底部 tab 均可点击。
+- 本地 API 以最新源码重启后，`GET /users/default_user/spaces` 返回 5 个可见空间且当前空间排第一。
+
 Needs human:
 
 - H5 麦克风权限仍需要用户在浏览器里授权。
 
 ### Task 8: iOS 空间管理与当前空间录音对齐
 
-Status: local_build_passed_manual_pending
+Status: simulator_build_passed_manual_recording_pending
 
 Files:
 
@@ -249,6 +257,7 @@ Done when:
 - iOS 有 `空间 / 记录 / 主题 / 我的` 四个入口，与 H5 的核心语义一致。
 - `我的` 里可以查看空间、创建空间、切换当前空间。
 - iOS build 通过。
+- iOS 首页空闲态体现当前空间、搜索入口、空间画像和最近记录，与 H5 的信息架构对齐。
 
 Verify:
 
