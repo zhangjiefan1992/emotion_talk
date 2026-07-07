@@ -263,6 +263,7 @@ Update 2026-07-06:
 - 2026-07-07 远程 API 验证 `00:00` / `00:18` 分钟级时间戳可解析为 2 段，空转写返回 `422 transcript text is empty`，避免空输入触发 AI 脑补。
 - 2026-07-07 H5 专家团上下文选择与 iOS 对齐：默认 `本次`，用户可切换 `结合历史` 后再生成专家团建议。
 - 2026-07-07 H5 空间管理本地与远程复验：`我的 -> 空间管理 -> 创建空间 -> 保存` 均可点击并成功落库；远程 `http://121.41.92.161` 从 `1/5` 变为 `2/5`，新空间出现，console 无 error/warn。Chrome Extension claim tab 超时，本次点击验证降级为临时 Playwright，不新增项目依赖。
+- 2026-07-07 iOS shared Xcode scheme 修正为本地 API `http://127.0.0.1:8000`，避免模拟器默认直连公网 HTTP IP 触发 `NSURLErrorDomain -1005`；`swift test` 5 tests OK，`xcodebuild ... iPhone 17 Pro build` 通过。
 
 ### Task 8: iOS 空间管理与当前空间录音对齐
 

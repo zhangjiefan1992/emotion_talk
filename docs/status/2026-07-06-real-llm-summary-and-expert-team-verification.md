@@ -644,3 +644,21 @@ cd apps/web && npm run type-check -> passed
 cd apps/web && npm run build:h5 -> DONE Build complete
 .venv/bin/python -m unittest services/api/tests/test_deliberation_service.py -> Ran 21 tests, OK
 ```
+
+## 2026-07-07 iOS Scheme Local API Default
+
+Finding:
+
+- `apps/ios/README.md` said the shared Xcode scheme uses `http://127.0.0.1:8000`, but the actual shared scheme still pointed Launch/Test to `http://121.41.92.161/api`.
+- That remote HTTP IP is the same path where Swift/URLSession produced `NSURLErrorDomain -1005`, so it was a bad default for simulator verification.
+
+Fix:
+
+- Updated `apps/ios/EmotionTalk.xcodeproj/xcshareddata/xcschemes/EmotionTalk.xcscheme` Launch/Test `EMOTION_TALK_API_BASE_URL` to `http://127.0.0.1:8000`.
+
+Verification:
+
+```text
+cd apps/ios && swift test -> 5 tests, 0 failures
+cd apps/ios && xcodebuild -scheme EmotionTalk -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build -> BUILD SUCCEEDED
+```
